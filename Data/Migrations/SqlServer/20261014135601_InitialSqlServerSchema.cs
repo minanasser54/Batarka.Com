@@ -113,7 +113,7 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                         column: x => x.SchoolLevelId,
                         principalTable: "SchoolLevels",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateTable(

@@ -911,7 +911,7 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                     b.HasOne("MyMvcApp10.Models.SchoolLevel", "SchoolLevel")
                         .WithMany("Classes")
                         .HasForeignKey("SchoolLevelId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("SchoolLevel");

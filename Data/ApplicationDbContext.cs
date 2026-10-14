@@ -47,7 +47,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         });
 
         builder.Entity<SchoolLevel>().HasIndex(x => x.Name).IsUnique();
-        builder.Entity<SchoolClass>().HasIndex(x => new { x.SchoolLevelId, x.Name }).IsUnique();
+        builder.Entity<SchoolClass>(entity =>
+        {
+            entity.HasIndex(x => new { x.SchoolLevelId, x.Name }).IsUnique();
+            entity.HasOne(x => x.SchoolLevel)
+                .WithMany(x => x.Classes)
+                .HasForeignKey(x => x.SchoolLevelId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
 
         builder.Entity<AttendanceRecord>(entity =>
         {
