@@ -1,0 +1,137 @@
+:root {
+    --navy: #132c4a;
+    --gold: #d4a73a;
+    --green: #1d8f52;
+    --red: #b6202a;
+    --black: #1b1b1b;
+    --bg: #f7f6f1;
+}
+
+html, body {
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    background: var(--bg);
+    direction: rtl;
+    text-align: right;
+}
+
+body {
+    margin-bottom: 60px;
+    color: #1c2430;
+}
+
+.main-nav {
+    background: linear-gradient(135deg, var(--navy), #224b77);
+}
+
+.card {
+    border: 0;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(19, 44, 74, 0.08);
+}
+
+.stat-card {
+    border-left: 5px solid var(--gold);
+}
+
+.green-pill {
+    background: rgba(29, 143, 82, 0.12);
+    color: var(--green);
+    border-radius: 999px;
+    padding: 8px 14px;
+    display: inline-block;
+    font-weight: 700;
+}
+
+.red-pill {
+    background: rgba(182, 32, 42, 0.12);
+    color: var(--red);
+    border-radius: 999px;
+    padding: 8px 14px;
+    display: inline-block;
+    font-weight: 700;
+}
+
+.badge-score {
+    display: inline-block;
+    min-width: 70px;
+    padding: 0.5rem 0.8rem;
+    border-radius: 10px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.badge-score.positive {
+    background: rgba(29, 143, 82, 0.12);
+    color: var(--green);
+}
+
+.badge-score.negative {
+    background: rgba(182, 32, 42, 0.12);
+    color: var(--red);
+}
+
+.btn-success {
+    background: var(--green);
+    border-color: var(--green);
+}
+
+.btn-danger {
+    background: var(--red);
+    border-color: var(--red);
+}
+
+.btn-dark {
+    background: var(--black);
+    border-color: var(--black);
+}
+
+.login-box {
+    max-width: 480px;
+    margin: 4rem auto;
+    padding: 2rem;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.table th,
+.table td {
+    vertical-align: middle;
+}
+
+.top-balance {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--navy);
+}
+
+.hero {
+    background: linear-gradient(135deg, rgba(19,44,74,0.96), rgba(36,75,119,0.86));
+    color: #fff;
+    border-radius: 22px;
+    padding: 2rem;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding-left: 0.8rem;
+        padding-right: 0.8rem;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}

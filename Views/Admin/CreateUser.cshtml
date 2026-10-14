@@ -1,0 +1,62 @@
+@model MyMvcApp10.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "إضافة مستخدم";
+}
+
+<div class="card p-4">
+    <h2>إضافة مستخدم جديد</h2>
+    <form asp-action="CreateUser" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="FullName" class="form-label"></label>
+                <input asp-for="FullName" class="form-control" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="UserName" class="form-label"></label>
+                <input asp-for="UserName" class="form-control" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Password" class="form-label"></label>
+                <input asp-for="Password" class="form-control" type="password" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="ConfirmPassword" class="form-label"></label>
+                <input asp-for="ConfirmPassword" class="form-control" type="password" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="SchoolClassId" class="form-label"></label>
+                <select asp-for="SchoolClassId" class="form-select">
+                    <option value="">من غير فصل</option>
+                    @foreach (var item in ViewBag.Classes)
+                    {
+                        <option value="@item.Id">@item.SchoolLevel.Name - @item.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="SchoolLevelId" class="form-label"></label>
+                <select asp-for="SchoolLevelId" class="form-select">
+                    <option value="">من غير مرحلة</option>
+                    @foreach (var item in ViewBag.Levels)
+                    {
+                        <option value="@item.Id">@item.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-check-label" asp-for="IsTeacher"></label>
+                <input asp-for="IsTeacher" class="form-check-input d-block" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-check-label" asp-for="IsAdmin"></label>
+                <input asp-for="IsAdmin" class="form-check-input d-block" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-check-label" asp-for="IsActive"></label>
+                <input asp-for="IsActive" class="form-check-input d-block" />
+            </div>
+        </div>
+        <button class="btn btn-success mt-3" type="submit">حفظ المستخدم</button>
+    </form>
+</div>

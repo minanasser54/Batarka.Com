@@ -1,0 +1,39 @@
+@model List<MyMvcApp10.Models.AdminStudentListItemViewModel>
+@{
+    ViewData["Title"] = "مخدومين الفصل";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="mb-1">مخدومين @ViewBag.ClassTitle</h2>
+        <div class="text-muted">@ViewBag.LevelTitle</div>
+    </div>
+    <a asp-action="ExportClassStudents" asp-route-id="@ViewBag.ClassId" class="btn btn-success">تنزيل CSV</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>الاسم</th><th>اسم المستخدم</th><th>الفصل</th><th>الرصيد</th><th>الحضور</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+        <tbody>
+        @if (Model.Count == 0)
+        {
+            <tr><td colspan="7" class="text-center text-muted">مفيش مخدومين مسجلين في الفصل ده.</td></tr>
+        }
+        @foreach (var student in Model)
+        {
+            <tr>
+                <td>@student.FullName</td>
+                <td>@student.UserName</td>
+                <td>@(student.ClassName ?? "—")</td>
+                <td>@student.GradingBalance</td>
+                <td>@student.TotalAttendance</td>
+                <td>@(student.IsActive ? "نشط" : "متوقف")</td>
+                <td class="d-flex gap-2">
+                    <a asp-controller="QrCode" asp-action="ByUser" asp-route-id="@student.UserId" target="_blank" rel="noreferrer" class="btn btn-sm btn-outline-secondary">عرض QR</a>
+                    <a asp-controller="Admin" asp-action="EditUser" asp-route-id="@student.UserId" class="btn btn-sm btn-outline-primary">تعديل</a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

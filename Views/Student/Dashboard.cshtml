@@ -1,0 +1,86 @@
+@{
+    ViewData["Title"] = "لوحة المخدوم";
+    var user = ViewBag.User as MyMvcApp10.Models.ApplicationUser;
+    var attendanceCount = ViewBag.AttendanceCount;
+    var latestAttendance = ViewBag.LatestAttendance as DateTime?;
+}
+
+@if (user != null)
+{
+<div class="hero mb-4">
+    <h1>أهلاً بيك يا @user.FullName</h1>
+    <p class="mb-0">رصيد درجاتك وملفك الشخصي ونتائج حضورك.</p>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card p-3">
+            <div class="text-muted">رصيد الدرجات</div>
+            <div class="top-balance">@user.GradingBalance</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3">
+            <div class="text-muted">إجمالي مرات الحضور</div>
+            <div class="top-balance">@attendanceCount</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3">
+            <div class="text-muted">آخر حضور</div>
+            <div class="top-balance">@(latestAttendance.HasValue ? latestAttendance.Value.ToString("dd/MM/yyyy") : "—")</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h4>أحدث الحركات</h4>
+            @if (ViewBag.RecentTransactions is List<MyMvcApp10.Models.GradingTransaction> tx && tx.Any())
+            {
+                <ul class="list-group list-group-flush">
+                    @foreach (var item in tx)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>@item.Reason</span>
+                            <span class="badge-score @(item.PointsDelta >= 0 ? "positive" : "negative")">@item.PointsDelta</span>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p class="text-muted mb-0">مافيش حركات لسه.</p>
+            }
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h4>أحدث الحضور</h4>
+            @if (ViewBag.Records is List<MyMvcApp10.Models.AttendanceRecord> records && records.Any())
+            {
+                <ul class="list-group list-group-flush">
+                    @foreach (var item in records)
+                    {
+                        <li class="list-group-item">@item.AttendanceTimeUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p class="text-muted mb-0">مفيش حضور لسه.</p>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a class="btn btn-primary me-2" asp-controller="Student" asp-action="Profile">ملفي الشخصي</a>
+    <a class="btn btn-outline-dark" asp-controller="Student" asp-action="Leaderboard">أعلى 10</a>
+</div>
+}
+else
+{
+    <div class="alert alert-warning">لا توجد بيانات للمستخدم.</div>
+}

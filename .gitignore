@@ -1,0 +1,18 @@
+# Build outputs
+bin/
+obj/
+.vs/
+
+# Local databases and SQLite sidecars
+*.db
+*.db-*
+*.db-shm
+*.db-wal
+
+# Local secrets and machine-specific settings
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+*.user
+*.suo

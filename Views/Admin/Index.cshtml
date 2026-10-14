@@ -1,0 +1,57 @@
+@{
+    ViewData["Title"] = "لوحة التحكم";
+    var summary = ViewBag.Model as dynamic;
+}
+
+<div class="hero mb-4">
+    <h1>لوحة التحكم</h1>
+    <p class="mb-0">مؤشرات الحضور، التقييمات، والإدارة اليومية.</p>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted">إجمالي المخدومين</div>
+            <div class="top-balance">@summary.TotalStudents</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted">إجمالي الخدام</div>
+            <div class="top-balance">@summary.TotalTeachers</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted">الحضور النهارده</div>
+            <div class="top-balance">@summary.AttendanceToday</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted">عدد الغياب النهارده</div>
+            <div class="top-balance">@summary.AbsentToday</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h4>إدارة النظام</h4>
+            <ul class="list-unstyled mb-0">
+                <li><a asp-action="Students" asp-controller="Admin">إدارة المخدومين</a></li>
+                <li><a asp-action="Teachers" asp-controller="Admin">إدارة الخدام</a></li>
+                <li><a asp-action="Settings" asp-controller="Admin">إعدادات النظام</a></li>
+                <li><a asp-action="Audit" asp-controller="Admin">سجل العمليات</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h4>مؤشرات الدرجات</h4>
+            <p class="mb-1">إجمالي نقاط الدرجات الممنوحة: <strong>@summary.TotalPointsAwarded</strong></p>
+            <p class="mb-0">عدد عمليات تسجيل الحضور النهارده: <strong>@summary.AttendanceRegistrations</strong></p>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,57 @@
+@model List<MyMvcApp10.Models.ApplicationUser>
+@{
+    ViewData["Title"] = "تسجيل الدرجات";
+}
+
+<div class="card p-4 mb-4">
+    <h2>تسجيل الدرجات</h2>
+    <form method="get" class="row g-2 mt-2">
+        <div class="col-md-8">
+            <input name="searchTerm" class="form-control" placeholder="ابحث عن مخدوم بالاسم أو اسم المستخدم" />
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary w-100">بحث</button>
+        </div>
+    </form>
+</div>
+
+<div class="table-responsive card p-3">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>الاسم</th>
+                <th>الفصل</th>
+                <th>المرحلة</th>
+                <th>الرصيد</th>
+                <th>إجراء</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var student in Model)
+                {
+                    <tr>
+                        <td>@student.FullName</td>
+                        <td>@student.ClassName</td>
+                        <td>@student.Level</td>
+                        <td><span class="badge-score @(student.GradingBalance >= 0 ? "positive" : "negative")">@student.GradingBalance</span></td>
+                        <td>
+                            <form asp-action="Apply" method="post" class="d-flex gap-2">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="studentId" value="@student.Id" />
+                                <button type="submit" name="action" value="green" class="btn btn-success btn-sm">أخضر +1</button>
+                                <button type="submit" name="action" value="red" class="btn btn-danger btn-sm">أحمر -1</button>
+                                <button type="submit" name="action" value="black" class="btn btn-dark btn-sm">أسود -5</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr><td colspan="5" class="text-center text-muted">لا توجد نتائج.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

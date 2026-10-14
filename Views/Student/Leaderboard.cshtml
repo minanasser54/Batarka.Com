@@ -1,0 +1,42 @@
+@model List<MyMvcApp10.Models.ApplicationUser>
+@{
+    ViewData["Title"] = "أعلى 10 مخدومين";
+}
+
+<div class="card p-4">
+    <h2>أعلى 10 مخدومين في الدرجات</h2>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="table-responsive mt-3">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>الترتيب</th>
+                        <th>الاسم</th>
+                        <th>الفصل</th>
+                        <th>المرحلة</th>
+                        <th>الرصيد</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < Model.Count; i++)
+                    {
+                        var student = Model[i];
+                        <tr>
+                            <td>@(i + 1)</td>
+                            <td>@student.FullName</td>
+                            <td>@student.ClassName</td>
+                            <td>@student.Level</td>
+                            <td><span class="badge-score @(student.GradingBalance >= 0 ? "positive" : "negative")">@student.GradingBalance</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <p class="text-center text-muted mt-3">لا توجد بيانات كفاية لعرض اللوحة حاليًا.</p>
+    }
+</div>

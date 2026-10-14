@@ -1,0 +1,66 @@
+@model MyMvcApp10.Models.EditUserViewModel
+@{
+    ViewData["Title"] = "تعديل بيانات المستخدم";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h2 class="mb-3">تعديل بيانات المستخدم</h2>
+        <form asp-action="EditUser" method="post" class="border rounded p-4">
+            <input asp-for="Id" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="FullName" class="form-label"></label>
+                    <input asp-for="FullName" class="form-control" />
+                    <span asp-validation-for="FullName" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="UserName" class="form-label"></label>
+                    <input asp-for="UserName" class="form-control" />
+                    <span asp-validation-for="UserName" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Mobile" class="form-label"></label>
+                    <input asp-for="Mobile" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Address" class="form-label"></label>
+                    <input asp-for="Address" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="SchoolLevelId" class="form-label"></label>
+                    <select asp-for="SchoolLevelId" class="form-select">
+                        <option value="">من غير مرحلة</option>
+                        @foreach (var level in ViewBag.Levels)
+                        {
+                            <option value="@level.Id">@level.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="SchoolClassId" class="form-label"></label>
+                    <select asp-for="SchoolClassId" class="form-select">
+                        <option value="">من غير فصل</option>
+                        @foreach (var schoolClass in ViewBag.Classes)
+                        {
+                            <option value="@schoolClass.Id">@schoolClass.SchoolLevel.Name - @schoolClass.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Notes" class="form-label"></label>
+                    <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input asp-for="IsActive" class="form-check-input" />
+                        <label asp-for="IsActive" class="form-check-label"></label>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-primary mt-4" type="submit">حفظ التعديلات</button>
+            <a asp-action="Students" class="btn btn-outline-secondary mt-4">رجوع</a>
+        </form>
+    </div>
+</div>

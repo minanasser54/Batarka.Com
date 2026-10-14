@@ -1,0 +1,49 @@
+@model List<MyMvcApp10.Models.SchoolClass>
+@{
+    ViewData["Title"] = "إدارة الفصول";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>الفصول</h2>
+    <a asp-action="Levels" class="btn btn-outline-secondary">إدارة المراحل</a>
+</div>
+
+<form asp-action="CreateClass" method="post" class="row g-2 align-items-end border-bottom pb-3 mb-3">
+    <div class="col-md-5">
+        <label class="form-label" for="className">اسم الفصل</label>
+        <input id="className" name="name" class="form-control" maxlength="120" required />
+    </div>
+    <div class="col-md-5">
+        <label class="form-label" for="schoolLevelId">المرحلة</label>
+        <select id="schoolLevelId" name="schoolLevelId" class="form-select" required>
+            <option value="">اختار المرحلة</option>
+            @foreach (var level in ViewBag.Levels)
+            {
+                <option value="@level.Id" selected="@(ViewBag.SelectedLevelId == level.Id)">@level.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2"><button class="btn btn-success w-100" type="submit">إضافة فصل</button></div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead><tr><th>الفصل</th><th>المرحلة</th><th>إجراءات</th></tr></thead>
+        <tbody>
+        @foreach (var schoolClass in Model)
+        {
+            <tr>
+                <td>@schoolClass.Name</td>
+                <td>@schoolClass.SchoolLevel.Name</td>
+                <td class="d-flex gap-2">
+                    <a asp-action="ClassStudents" asp-route-id="@schoolClass.Id" class="btn btn-sm btn-outline-secondary">طلاب الفصل</a>
+                    <a asp-action="EditClass" asp-route-id="@schoolClass.Id" class="btn btn-sm btn-outline-primary">تعديل</a>
+                    <form asp-action="DeleteClass" asp-route-id="@schoolClass.Id" method="post" onsubmit="return confirm('متأكد إنك عايز تمسح الفصل؟')">
+                        <button class="btn btn-sm btn-outline-danger" type="submit">حذف</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

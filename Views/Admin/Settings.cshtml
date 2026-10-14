@@ -1,0 +1,20 @@
+@model Dictionary<string, string>
+@{
+    ViewData["Title"] = "إعدادات النظام";
+}
+
+<div class="card p-4">
+    <h2>إعدادات النظام</h2>
+    <form asp-action="SaveSettings" method="post">
+        @Html.AntiForgeryToken()
+        <div class="mb-3">
+            <label class="form-label">المنطقة الزمنية</label>
+            <input name="timezone" class="form-control" value="@(Model.ContainsKey("Timezone") ? Model["Timezone"] : "Africa/Cairo")" />
+        </div>
+        <div class="form-check mb-3">
+            <input type="checkbox" name="negativeBalanceAllowed" class="form-check-input" @(Model.ContainsKey("NegativeBalanceAllowed") && Model["NegativeBalanceAllowed"] == "true" ? "checked" : "") />
+            <label class="form-check-label">السماح برصيد سلبي</label>
+        </div>
+        <button type="submit" class="btn btn-primary">حفظ الإعدادات</button>
+    </form>
+</div>

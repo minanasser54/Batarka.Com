@@ -1,0 +1,38 @@
+@model List<MyMvcApp10.Models.AuditLog>
+@{
+    ViewData["Title"] = "سجل العمليات";
+}
+
+<div class="card p-3">
+    <h2>سجل العمليات</h2>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>الإجراء</th>
+                    <th>الهدف</th>
+                    <th>التفاصيل</th>
+                    <th>التاريخ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.Action</td>
+                            <td>@item.TargetType</td>
+                            <td>@item.Details</td>
+                            <td>@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="4" class="text-center text-muted">لا توجد بيانات.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

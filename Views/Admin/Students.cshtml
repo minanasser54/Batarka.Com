@@ -1,0 +1,101 @@
+@model List<MyMvcApp10.Models.AdminStudentListItemViewModel>
+@{
+    ViewData["Title"] = "إدارة المخدومين";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>إدارة المخدومين</h2>
+    <div class="d-flex gap-2">
+        <a asp-controller="SchoolStructure" asp-action="Levels" class="btn btn-outline-secondary">المراحل والفصول</a>
+        <a asp-action="CreateUser" class="btn btn-success">إضافة مخدوم أو خادم</a>
+    </div>
+</div>
+
+<div class="card p-3 mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">البحث</label>
+            <input name="search" class="form-control" placeholder="اسم أو مستخدم" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">الفصل</label>
+            <select name="schoolClassId" class="form-select">
+                <option value="">الكل</option>
+                @foreach (var item in ViewBag.Classes)
+                {
+                    <option value="@item.Id" selected="@(ViewBag.SelectedClassId == item.Id)">@item.SchoolLevel.Name - @item.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">المرحلة</label>
+            <select name="schoolLevelId" class="form-select">
+                <option value="">الكل</option>
+                @foreach (var item in ViewBag.Levels)
+                {
+                    <option value="@item.Id" selected="@(ViewBag.SelectedLevelId == item.Id)">@item.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">الحالة</label>
+            <select name="activeStatus" class="form-select">
+                <option value="all">الكل</option>
+                <option value="active">نشط</option>
+                <option value="inactive">غير نشط</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary w-100">بحث</button>
+        </div>
+    </form>
+</div>
+
+<div class="table-responsive card p-3">
+    <table class="table table-striped mb-0">
+        <thead>
+            <tr>
+                <th>الاسم</th>
+                <th>اسم المستخدم</th>
+                <th>الفصل</th>
+                <th>المرحلة</th>
+                <th>الرصيد</th>
+                <th>الحضور</th>
+                <th>الحالة</th>
+                <th>تاريخ الإنشاء</th>
+                <th>إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Count > 0)
+            {
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.FullName</td>
+                        <td>@item.UserName</td>
+                        <td>@item.ClassName</td>
+                        <td>@item.Level</td>
+                        <td><span class="badge-score @(item.GradingBalance >= 0 ? "positive" : "negative")">@item.GradingBalance</span></td>
+                        <td>@item.TotalAttendance</td>
+                        <td>@(item.IsActive ? "نشط" : "متوقف")</td>
+                        <td>@item.CreatedAt.ToString("dd/MM/yyyy")</td>
+                        <td class="d-flex gap-2">
+                            <a asp-action="EditUser" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-primary">تعديل</a>
+                            @if (item.SchoolLevelId.HasValue)
+                            {
+                                <a asp-controller="SchoolStructure" asp-action="LevelStudents" asp-route-id="@item.SchoolLevelId" class="btn btn-sm btn-outline-secondary">طلاب المرحلة</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="9" class="text-center text-muted">لا توجد بيانات لسه.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

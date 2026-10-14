@@ -1,0 +1,36 @@
+@model MyMvcApp10.Models.ApplicationUser
+@{
+    ViewData["Title"] = "ملفي الشخصي";
+}
+
+<div class="p-3">
+    <h2>ملفي الشخصي</h2>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="border rounded p-3 h-100">
+                <div class="text-muted">الاسم</div>
+                <div class="fw-bold fs-5">@Model.FullName</div>
+                <div class="text-muted mt-2">الفصل: @(Model.SchoolClass?.Name ?? Model.ClassName ?? "—")</div>
+                <div class="text-muted">المرحلة: @(Model.SchoolLevel?.Name ?? Model.Level ?? "—")</div>
+                <div class="text-muted">الرصيد: <span class="badge-score @(Model.GradingBalance >= 0 ? "positive" : "negative")">@Model.GradingBalance</span></div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="border rounded p-3 h-100">
+                <h5>معلومات التواصل</h5>
+                <p class="mb-1">الموبايل: @(string.IsNullOrWhiteSpace(Model.Mobile) ? "غير متاح" : Model.Mobile)</p>
+                <p class="mb-0">العنوان: @(string.IsNullOrWhiteSpace(Model.Address) ? "غير متاح" : Model.Address)</p>
+            </div>
+        </div>
+        @if (!Model.IsAdmin && !Model.IsTeacher)
+        {
+            <div class="col-12">
+                <div class="border rounded p-3 d-flex flex-column align-items-center text-center">
+                    <h5>كود تسجيل الحضور</h5>
+                    <img src="@Url.Action("Me", "QrCode")" alt="كود QR الخاص بتسجيل الحضور" width="240" height="240" class="img-fluid" />
+                    <span class="small text-muted">ورّي الكود للخادم وقت تسجيل الحضور.</span>
+                </div>
+            </div>
+        }
+    </div>
+</div>
