@@ -6,7 +6,7 @@ namespace MyMvcApp10.Data;
 
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+    public ApplicationDbContext(DbContextOptions options)
         : base(options)
     {
     }

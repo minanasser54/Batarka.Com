@@ -3,11 +3,48 @@ using Microsoft.EntityFrameworkCore;
 using MyMvcApp10.Data;
 using MyMvcApp10.Models;
 
+var envFile = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+if (File.Exists(envFile))
+{
+    DotNetEnv.Env.Load(envFile);
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
+var databaseProvider = builder.Configuration["Database:Provider"];
+if (string.IsNullOrWhiteSpace(databaseProvider))
+{
+    databaseProvider = builder.Environment.IsProduction() ? "SqlServer" : "Sqlite";
+}
+
+if (databaseProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+{
+    var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException("Set ConnectionStrings__DefaultConnection in the hosting environment or local .env file.");
+    }
+
+    builder.Services.AddDbContext<SqlServerApplicationDbContext>(options =>
+        options.UseSqlServer(connectionString, sql =>
+            sql.MigrationsAssembly(typeof(SqlServerApplicationDbContext).Assembly.FullName)));
+    builder.Services.AddScoped<ApplicationDbContext>(services =>
+        services.GetRequiredService<SqlServerApplicationDbContext>());
+}
+else if (databaseProvider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+{
+#if DEBUG
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+    builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(connectionString));
+#else
+    throw new InvalidOperationException("SQLite is only included in Debug builds. Configure SqlServer for deployment.");
+#endif
+}
+else
+{
+    throw new InvalidOperationException($"Unsupported database provider '{databaseProvider}'. Use Sqlite or SqlServer.");
+}
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
