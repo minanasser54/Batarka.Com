@@ -73,6 +73,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+            builder.Entity<AttendanceQuestionnaireSubmission>(entity =>
+            {
+                entity.HasOne(x => x.SubmittedBy)
+                .WithMany()
+                .HasForeignKey(x => x.SubmittedById)
+                .OnDelete(DeleteBehavior.NoAction);
+            });
+
         builder.Entity<AttendanceSession>(entity =>
         {
             entity.HasIndex(x => x.SessionDate);

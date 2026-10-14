@@ -819,7 +819,7 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                     b.HasOne("MyMvcApp10.Models.ApplicationUser", "SubmittedBy")
                         .WithMany()
                         .HasForeignKey("SubmittedById")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("AttendanceRecord");

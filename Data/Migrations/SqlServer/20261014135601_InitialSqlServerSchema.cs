@@ -414,8 +414,7 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                         name: "FK_AttendanceQuestionnaireSubmissions_AspNetUsers_SubmittedById",
                         column: x => x.SubmittedById,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_AttendanceQuestionnaireSubmissions_AttendanceRecords_AttendanceRecordId",
                         column: x => x.AttendanceRecordId,
