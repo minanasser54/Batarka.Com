@@ -33,16 +33,7 @@
                         <option value="@item.Id">@item.SchoolLevel.Name - @item.Name</option>
                     }
                 </select>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="SchoolLevelId" class="form-label"></label>
-                <select asp-for="SchoolLevelId" class="form-select">
-                    <option value="">من غير مرحلة</option>
-                    @foreach (var item in ViewBag.Levels)
-                    {
-                        <option value="@item.Id">@item.Name</option>
-                    }
-                </select>
+                <div class="form-text">المرحلة بتتحدد تلقائي من الفصل.</div>
             </div>
             <div class="col-md-3">
                 <label class="form-check-label" asp-for="IsTeacher"></label>

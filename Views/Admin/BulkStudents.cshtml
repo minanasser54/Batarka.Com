@@ -1,0 +1,83 @@
+@model MyMvcApp10.Models.BulkStudentImportViewModel
+@{
+    ViewData["Title"] = "إضافة أو تعطيل مخدومين";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>إدارة جماعية للمخدومين</h2>
+    <a asp-action="Students" class="btn btn-outline-secondary">إدارة المخدومين</a>
+</div>
+
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-6">
+        <label class="form-label" for="classFilter">الفصل</label>
+        <select id="classFilter" name="schoolClassId" class="form-select" required>
+            <option value="">اختار الفصل</option>
+            @foreach (var schoolClass in ViewBag.Classes)
+            {
+                <option value="@schoolClass.Id" selected="@(ViewBag.SelectedClassId == schoolClass.Id)">@schoolClass.SchoolLevel.Name - @schoolClass.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-auto"><button class="btn btn-outline-primary" type="submit">عرض الفصل</button></div>
+</form>
+
+<section class="border rounded p-3 mb-4">
+    <h4>إضافة مجموعة للفصل</h4>
+    <p class="text-muted">كل سطر: الاسم، اسم المستخدم، كلمة المرور، الموبايل اختياري، البريد اختياري. استخدم CSV، وحط النصوص اللي فيها فاصلة بين علامتي اقتباس.</p>
+    <form asp-action="ImportStudents" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        <input asp-for="SchoolClassId" type="hidden" />
+        <div class="mb-3">
+            <label asp-for="Rows" class="form-label"></label>
+            <textarea asp-for="Rows" class="form-control" rows="7" dir="ltr" placeholder="Full Name,username,TempPass123,mobile,email"></textarea>
+            <span asp-validation-for="Rows" class="text-danger"></span>
+        </div>
+        <button class="btn btn-success" type="submit">استيراد المخدومين</button>
+    </form>
+    @if (ViewBag.ImportErrors is IEnumerable<string> errors)
+    {
+        <div class="alert alert-warning mt-3 mb-0">
+            @foreach (var error in errors)
+            {
+                <div>@error</div>
+            }
+        </div>
+    }
+</section>
+
+@if (Model.SchoolClassId > 0)
+{
+    <section class="border rounded p-3">
+        <h4>مخدومين الفصل الحالي</h4>
+        <p class="text-muted">التعطيل يمنع الدخول ويحافظ على سجل الحضور والدرجات.</p>
+        <form asp-action="BulkDeactivateStudents" method="post" onsubmit="return confirm('هيتم تعطيل الحسابات المختارة مع الاحتفاظ بسجلاتها. نكمل؟')">
+            <input type="hidden" name="schoolClassId" value="@Model.SchoolClassId" />
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead><tr><th><input type="checkbox" id="selectAllStudents" aria-label="تحديد الكل" /></th><th>الاسم</th><th>اسم المستخدم</th><th>الحالة</th></tr></thead>
+                    <tbody>
+                    @foreach (var student in ViewBag.ClassStudents)
+                    {
+                        <tr>
+                            <td><input type="checkbox" name="studentIds" value="@student.Id" checked="@student.IsActive" disabled="@(!student.IsActive)" /></td>
+                            <td>@student.FullName</td>
+                            <td>@student.UserName</td>
+                            <td>@(student.IsActive ? "نشط" : "متوقف")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <button class="btn btn-outline-danger" type="submit">تعطيل المحددين</button>
+        </form>
+    </section>
+}
+
+@section Scripts {
+<script>
+    document.getElementById('selectAllStudents')?.addEventListener('change', event => {
+        document.querySelectorAll('input[name="studentIds"]:not(:disabled)').forEach(input => input.checked = event.target.checked);
+    });
+</script>
+}

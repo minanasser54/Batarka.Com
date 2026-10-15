@@ -14,13 +14,17 @@
             <button class="btn btn-primary" type="submit">عرض اليوم</button>
         </div>
         <div class="col-auto">
-            <a class="btn btn-outline-success" asp-action="ExportCsv" asp-route-date="@Model.SelectedDate.ToString("yyyy-MM-dd")">تنزيل CSV</a>
+            <a class="btn btn-outline-success" asp-action="ExportCsv" asp-route-date="@Model.SelectedDate.ToString("yyyy-MM-dd")">تنزيل حضور المخدومين CSV</a>
+        </div>
+        <div class="col-auto">
+            <a class="btn btn-outline-secondary" asp-action="ExportTeachersCsv" asp-route-date="@Model.SelectedDate.ToString("yyyy-MM-dd")">تنزيل حضور الخدام CSV</a>
         </div>
     </form>
     <div class="row g-3 mb-4">
         <div class="col-sm-4"><div class="border rounded p-3"><div class="text-muted">الحضور</div><strong>@Model.TodayAttendance.Count</strong></div></div>
         <div class="col-sm-4"><div class="border rounded p-3"><div class="text-muted">المخدومين النشطين</div><strong>@Model.ActiveStudentCount</strong></div></div>
         <div class="col-sm-4"><div class="border rounded p-3"><div class="text-muted">الغياب</div><strong>@Model.MissingPeople.Count</strong></div></div>
+        <div class="col-sm-4"><div class="border rounded p-3"><div class="text-muted">حضور الخدام</div><strong>@Model.TeacherAttendance.Count / @Model.ActiveTeacherCount</strong></div></div>
     </div>
     <div class="row g-3">
         <div class="col-md-6">
@@ -50,37 +54,55 @@
 
 <div class="row g-4">
     <div class="col-lg-8">
-        <div class="card p-3">
-            <h4>الحضور بتاريخ @Model.SelectedDate.ToString("dd/MM/yyyy")</h4>
+        <div class="card p-3 mb-4">
+            <h4>حضور المخدومين بتاريخ @Model.SelectedDate.ToString("dd/MM/yyyy")</h4>
             <div class="table-responsive">
                 <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>الاسم</th>
-                            <th>النوع</th>
-                            <th>الفصل</th>
-                            <th>المرحلة</th>
-                            <th>وقت الحضور</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>الاسم</th><th>اسم المستخدم</th><th>الفصل</th><th>المرحلة</th><th>وقت الحضور</th></tr></thead>
                     <tbody>
-                        @if (Model.TodayAttendance.Any())
+                    @if (Model.StudentAttendance.Any())
+                    {
+                        @foreach (var record in Model.StudentAttendance)
                         {
-                            @foreach (var record in Model.TodayAttendance)
-                            { 
-                                <tr>
-                                    <td>@(record.User?.FullName ?? "غير معروف")</td>
-                                    <td>@(record.User?.IsTeacher == true ? "خادم" : "مخدوم")</td>
-                                    <td>@(record.User?.SchoolClass?.Name ?? record.User?.ClassName ?? "—")</td>
-                                    <td>@(record.User?.SchoolLevel?.Name ?? record.User?.Level ?? "—")</td>
-                                    <td>@Model.LocalAttendanceTimes[record.Id]</td>
-                                </tr>
-                            }
+                            <tr>
+                                <td>@record.User.FullName</td>
+                                <td>@record.User.UserName</td>
+                                <td>@(record.User.SchoolClass?.Name ?? record.User.ClassName ?? "—")</td>
+                                <td>@(record.User.SchoolLevel?.Name ?? record.User.Level ?? "—")</td>
+                                <td>@Model.LocalAttendanceTimes[record.Id]</td>
+                            </tr>
                         }
-                        else
+                    }
+                    else
+                    {
+                        <tr><td colspan="5" class="text-center text-muted">مفيش حضور للمخدومين في اليوم ده.</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card p-3">
+            <h4>حضور الخدام بتاريخ @Model.SelectedDate.ToString("dd/MM/yyyy")</h4>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead><tr><th>الاسم</th><th>اسم المستخدم</th><th>وقت الحضور</th><th>طريقة التسجيل</th></tr></thead>
+                    <tbody>
+                    @if (Model.TeacherAttendance.Any())
+                    {
+                        @foreach (var record in Model.TeacherAttendance)
                         {
-                            <tr><td colspan="5" class="text-center text-muted">مفيش بيانات لسه.</td></tr>
+                            <tr>
+                                <td>@record.User.FullName</td>
+                                <td>@record.User.UserName</td>
+                                <td>@Model.LocalAttendanceTimes[record.Id]</td>
+                                <td>@record.RegistrationMethod</td>
+                            </tr>
                         }
+                    }
+                    else
+                    {
+                        <tr><td colspan="4" class="text-center text-muted">مفيش حضور للخدام في اليوم ده.</td></tr>
+                    }
                     </tbody>
                 </table>
             </div>

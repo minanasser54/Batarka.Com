@@ -786,7 +786,7 @@ namespace MyMvcApp10.Data.Migrations
                     b.HasOne("MyMvcApp10.Models.ApplicationUser", "SubmittedBy")
                         .WithMany()
                         .HasForeignKey("SubmittedById")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("AttendanceRecord");
@@ -878,7 +878,7 @@ namespace MyMvcApp10.Data.Migrations
                     b.HasOne("MyMvcApp10.Models.SchoolLevel", "SchoolLevel")
                         .WithMany("Classes")
                         .HasForeignKey("SchoolLevelId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("SchoolLevel");

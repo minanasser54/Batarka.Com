@@ -3,16 +3,36 @@
     ViewData["Title"] = "تسجيل الدرجات";
 }
 
-<div class="card p-4 mb-4">
+<div class="mb-3">
     <h2>تسجيل الدرجات</h2>
-    <form method="get" class="row g-2 mt-2">
-        <div class="col-md-8">
-            <input name="searchTerm" class="form-control" placeholder="ابحث عن مخدوم بالاسم أو اسم المستخدم" />
-        </div>
+    <form method="get" class="row g-2 align-items-end">
         <div class="col-md-4">
-            <button type="submit" class="btn btn-primary w-100">بحث</button>
+            <label class="form-label" for="searchTerm">بحث</label>
+            <input id="searchTerm" name="searchTerm" value="@ViewBag.SearchTerm" class="form-control" placeholder="اسم، اسم مستخدم، موبايل أو بريد" />
         </div>
+        <div class="col-md-3">
+            <label class="form-label" for="schoolLevelId">المرحلة</label>
+            <select id="schoolLevelId" name="schoolLevelId" class="form-select">
+                <option value="">كل المراحل</option>
+                @foreach (var level in ViewBag.Levels)
+                {
+                    <option value="@level.Id" selected="@(ViewBag.SelectedLevelId == level.Id)">@level.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="schoolClassId">الفصل</label>
+            <select id="schoolClassId" name="schoolClassId" class="form-select">
+                <option value="">كل الفصول</option>
+                @foreach (var schoolClass in ViewBag.Classes)
+                {
+                    <option value="@schoolClass.Id" selected="@(ViewBag.SelectedClassId == schoolClass.Id)">@schoolClass.SchoolLevel.Name - @schoolClass.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">بحث</button></div>
     </form>
+    <div class="small text-muted mt-2">المعروض لحد 50 مخدوم. استخدم الاسم أو الموبايل أو البريد أو اختار الفصل.</div>
 </div>
 
 <div class="table-responsive card p-3">
@@ -33,8 +53,8 @@
                 {
                     <tr>
                         <td>@student.FullName</td>
-                        <td>@student.ClassName</td>
-                        <td>@student.Level</td>
+                        <td>@(student.SchoolClass?.Name ?? student.ClassName ?? "—")</td>
+                        <td>@(student.SchoolLevel?.Name ?? student.Level ?? "—")</td>
                         <td><span class="badge-score @(student.GradingBalance >= 0 ? "positive" : "negative")">@student.GradingBalance</span></td>
                         <td>
                             <form asp-action="Apply" method="post" class="d-flex gap-2">

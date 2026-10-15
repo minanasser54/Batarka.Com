@@ -49,6 +49,15 @@ public class AccountController : Controller
         {
             user.LastLoginAt = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
+            _db.AuditLogs.Add(new AuditLog
+            {
+                ActorId = user.Id,
+                Action = "LoginSucceeded",
+                TargetType = "User",
+                TargetId = user.Id,
+                Details = "تسجيل دخول ناجح.",
+                CreatedAt = DateTime.UtcNow
+            });
             await _db.SaveChangesAsync();
             return RedirectToLocal(returnUrl);
         }

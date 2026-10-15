@@ -1,0 +1,77 @@
+@model List<MyMvcApp10.Models.AttendanceQuestionDefinition>
+@{
+    ViewData["Title"] = "أسئلة الحضور والنقاط";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>أسئلة الحضور والنقاط</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">لوحة الإدارة</a>
+</div>
+
+<form asp-action="SaveAttendancePoints" method="post" class="row g-2 align-items-end border-bottom pb-3 mb-4">
+    <div class="col-sm-5 col-md-3">
+        <label class="form-label" for="attendancePoints">نقاط الحضور</label>
+        <input id="attendancePoints" name="attendancePoints" type="number" min="0" max="1000" value="@ViewBag.AttendancePoints" class="form-control" required />
+    </div>
+    <div class="col-auto"><button class="btn btn-primary" type="submit">حفظ نقاط الحضور</button></div>
+</form>
+
+<h4 class="mb-3">الأسئلة الحالية</h4>
+@foreach (var question in Model)
+{
+    <div class="border rounded p-3 mb-3">
+        <form asp-action="SaveQuestion" method="post" class="row g-2 align-items-end">
+            <input type="hidden" name="Id" value="@question.Id" />
+            <div class="col-md-2">
+                <label class="form-label">الكود</label>
+                <input name="Code" value="@question.Code" class="form-control" maxlength="80" required />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">نص السؤال</label>
+                <input name="DisplayText" value="@question.DisplayText" class="form-control" maxlength="250" required />
+            </div>
+            <div class="col-6 col-md-1">
+                <label class="form-label">النقاط</label>
+                <input name="PointsAwarded" type="number" min="0" max="1000" value="@question.PointsAwarded" class="form-control" required />
+            </div>
+            <div class="col-6 col-md-1">
+                <label class="form-label">الترتيب</label>
+                <input name="SortOrder" type="number" value="@question.SortOrder" class="form-control" />
+            </div>
+            <div class="col-6 col-md-1">
+                <label class="form-label">من يوم</label>
+                <input name="StartDayOfMonth" type="number" min="1" max="31" value="@question.StartDayOfMonth" class="form-control" />
+            </div>
+            <div class="col-6 col-md-1">
+                <label class="form-label">لحد يوم</label>
+                <input name="EndDayOfMonth" type="number" min="1" max="31" value="@question.EndDayOfMonth" class="form-control" />
+            </div>
+            <div class="col-md-1">
+                <div class="form-check">
+                    <input name="IsEnabled" type="checkbox" value="true" class="form-check-input" checked="@question.IsEnabled" />
+                    <input name="IsEnabled" type="hidden" value="false" />
+                    <label class="form-check-label">مفعّل</label>
+                </div>
+            </div>
+            <div class="col-md-1"><button class="btn btn-primary w-100" type="submit">حفظ</button></div>
+        </form>
+        <form asp-action="DeleteQuestion" method="post" class="text-end mt-2" onsubmit="return confirm('لو للسؤال إجابات سابقة هيتوقف بدل ما يتمسح.')">
+            <input type="hidden" name="id" value="@question.Id" />
+            <button class="btn btn-sm btn-outline-danger" type="submit">حذف أو إيقاف</button>
+        </form>
+    </div>
+}
+
+<h4 class="mt-4 mb-3">إضافة سؤال</h4>
+<form asp-action="SaveQuestion" method="post" class="row g-2 align-items-end border rounded p-3">
+    <div class="col-md-2"><label class="form-label">الكود</label><input name="Code" class="form-control" maxlength="80" required /></div>
+    <div class="col-md-4"><label class="form-label">نص السؤال</label><input name="DisplayText" class="form-control" maxlength="250" required /></div>
+    <div class="col-6 col-md-1"><label class="form-label">النقاط</label><input name="PointsAwarded" type="number" min="0" max="1000" value="1" class="form-control" required /></div>
+    <div class="col-6 col-md-1"><label class="form-label">الترتيب</label><input name="SortOrder" type="number" value="@((Model.Count + 1) * 10)" class="form-control" /></div>
+    <div class="col-6 col-md-1"><label class="form-label">من يوم</label><input name="StartDayOfMonth" type="number" min="1" max="31" class="form-control" /></div>
+    <div class="col-6 col-md-1"><label class="form-label">لحد يوم</label><input name="EndDayOfMonth" type="number" min="1" max="31" class="form-control" /></div>
+    <div class="col-md-1">
+        <div class="form-check"><input name="IsEnabled" type="checkbox" value="true" class="form-check-input" checked /><input name="IsEnabled" type="hidden" value="false" /><label class="form-check-label">مفعّل</label></div>
+    </div>
+    <div class="col-md-1"><button class="btn btn-success w-100" type="submit">إضافة</button></div>
+</form>

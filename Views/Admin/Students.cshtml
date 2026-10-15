@@ -7,6 +7,7 @@
     <h2>إدارة المخدومين</h2>
     <div class="d-flex gap-2">
         <a asp-controller="SchoolStructure" asp-action="Levels" class="btn btn-outline-secondary">المراحل والفصول</a>
+        <a asp-action="BulkStudents" class="btn btn-outline-secondary">إدارة جماعية</a>
         <a asp-action="CreateUser" class="btn btn-success">إضافة مخدوم أو خادم</a>
     </div>
 </div>
@@ -82,6 +83,7 @@
                         <td>@item.CreatedAt.ToString("dd/MM/yyyy")</td>
                         <td class="d-flex gap-2">
                             <a asp-action="EditUser" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-primary">تعديل</a>
+                            <a asp-action="ResetPassword" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-warning">تغيير كلمة المرور</a>
                             @if (item.SchoolLevelId.HasValue)
                             {
                                 <a asp-controller="SchoolStructure" asp-action="LevelStudents" asp-route-id="@item.SchoolLevelId" class="btn btn-sm btn-outline-secondary">طلاب المرحلة</a>

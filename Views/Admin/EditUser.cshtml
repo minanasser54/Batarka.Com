@@ -29,16 +29,6 @@
                     <input asp-for="Address" class="form-control" />
                 </div>
                 <div class="col-md-6">
-                    <label asp-for="SchoolLevelId" class="form-label"></label>
-                    <select asp-for="SchoolLevelId" class="form-select">
-                        <option value="">من غير مرحلة</option>
-                        @foreach (var level in ViewBag.Levels)
-                        {
-                            <option value="@level.Id">@level.Name</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-6">
                     <label asp-for="SchoolClassId" class="form-label"></label>
                     <select asp-for="SchoolClassId" class="form-select">
                         <option value="">من غير فصل</option>
@@ -47,6 +37,7 @@
                             <option value="@schoolClass.Id">@schoolClass.SchoolLevel.Name - @schoolClass.Name</option>
                         }
                     </select>
+                    <div class="form-text">المرحلة بتتحدد تلقائي من الفصل.</div>
                 </div>
                 <div class="col-12">
                     <label asp-for="Notes" class="form-label"></label>

@@ -1,8 +1,60 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model MyMvcApp10.Models.HomeLandingViewModel
+@{
+    ViewData["Title"] = "أسرة بطاركة - مدارس الأحد";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="row g-4 align-items-start">
+    <section class="col-lg-7" aria-labelledby="leaderboardTitle">
+        <div class="d-flex justify-content-between align-items-end mb-3">
+            <div>
+                <div class="text-muted">مدارس الأحد ثانوي</div>
+                <h1 id="leaderboardTitle" class="h2 mb-0">أعلى 10 مخدومين</h1>
+            </div>
+            <span class="text-muted">حسب الرصيد</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead><tr><th>الترتيب</th><th>الاسم</th><th>الفصل</th><th>النقاط</th></tr></thead>
+                <tbody>
+                @if (Model.TopStudents.Count == 0)
+                {
+                    <tr><td colspan="4" class="text-center text-muted">الترتيب هيظهر لما تتسجل درجات.</td></tr>
+                }
+                @for (var index = 0; index < Model.TopStudents.Count; index++)
+                {
+                    var student = Model.TopStudents[index];
+                    <tr>
+                        <td>@(index + 1)</td>
+                        <td>@student.FullName</td>
+                        <td>@(student.SchoolClass?.Name ?? student.ClassName ?? "—")</td>
+                        <td><span class="badge-score @(student.GradingBalance >= 0 ? "positive" : "negative")">@student.GradingBalance</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="col-lg-5" aria-labelledby="loginTitle">
+        <div class="border rounded p-4">
+            <h2 id="loginTitle" class="h4">تسجيل الدخول</h2>
+            <form asp-controller="Account" asp-action="Login" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="/" />
+                <div class="mb-3">
+                    <label class="form-label" for="UserName">اسم المستخدم</label>
+                    <input id="UserName" name="UserName" class="form-control" autocomplete="username" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="Password">كلمة المرور</label>
+                    <input id="Password" name="Password" type="password" class="form-control" autocomplete="current-password" required />
+                </div>
+                <div class="form-check mb-3">
+                    <input id="RememberMe" name="RememberMe" type="checkbox" value="true" class="form-check-input" />
+                    <label for="RememberMe" class="form-check-label">تذكرني</label>
+                </div>
+                <button class="btn btn-primary w-100" type="submit">دخول</button>
+            </form>
+        </div>
+    </section>
 </div>

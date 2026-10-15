@@ -19,7 +19,7 @@ public class GradingController : Controller
         _userManager = userManager;
     }
 
-    public async Task<IActionResult> Index(string? searchTerm)
+    public async Task<IActionResult> Index(string? searchTerm, int? schoolLevelId, int? schoolClassId)
     {
         var current = await GetCurrentUserAsync();
         if (current == null || (!current.IsTeacher && !current.IsAdmin))
@@ -27,19 +27,35 @@ public class GradingController : Controller
             return Forbid();
         }
 
-        var query = _db.Users.AsQueryable();
+        var query = _db.Users
+            .Include(x => x.SchoolClass).ThenInclude(x => x!.SchoolLevel)
+            .AsQueryable();
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var term = searchTerm.Trim();
-            query = query.Where(u => u.FullName.Contains(term) || (u.UserName != null && u.UserName.Contains(term)));
+            query = query.Where(u =>
+                u.FullName.Contains(term) ||
+                (u.UserName != null && u.UserName.Contains(term)) ||
+                (u.Email != null && u.Email.Contains(term)) ||
+                (u.Mobile != null && u.Mobile.Contains(term)) ||
+                (u.SchoolClass != null && u.SchoolClass.Name.Contains(term)) ||
+                (u.SchoolLevel != null && u.SchoolLevel.Name.Contains(term)));
         }
+
+        if (schoolLevelId.HasValue) query = query.Where(u => u.SchoolLevelId == schoolLevelId.Value);
+        if (schoolClassId.HasValue) query = query.Where(u => u.SchoolClassId == schoolClassId.Value);
 
         var students = await query
             .Where(u => u.IsActive && !u.IsAdmin && !u.IsTeacher)
-            .Take(25)
             .OrderBy(u => u.FullName)
+            .Take(50)
             .ToListAsync();
 
+        ViewBag.SearchTerm = searchTerm;
+        ViewBag.SelectedLevelId = schoolLevelId;
+        ViewBag.SelectedClassId = schoolClassId;
+        ViewBag.Levels = await _db.SchoolLevels.OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToListAsync();
+        ViewBag.Classes = await _db.SchoolClasses.Include(x => x.SchoolLevel).OrderBy(x => x.SchoolLevel.SortOrder).ThenBy(x => x.Name).ToListAsync();
         return View(students);
     }
 
@@ -66,7 +82,7 @@ public class GradingController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var student = await _db.Users.FirstOrDefaultAsync(u => u.Id == studentId && u.IsActive);
+        var student = await _db.Users.FirstOrDefaultAsync(u => u.Id == studentId && u.IsActive && !u.IsAdmin && !u.IsTeacher);
         if (student == null)
         {
             TempData["ErrorMessage"] = "المخدوم غير موجود أو غير نشط.";

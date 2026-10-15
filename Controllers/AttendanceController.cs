@@ -43,9 +43,12 @@ public class AttendanceController : Controller
         var activeStudents = await _db.Users
             .Where(u => u.IsActive && !u.IsAdmin && !u.IsTeacher)
             .ToListAsync();
+        var activeTeacherCount = await _db.Users.CountAsync(u => u.IsActive && u.IsTeacher && !u.IsAdmin);
+        var studentRecords = records.Where(x => x.User != null && !x.User.IsTeacher && !x.User.IsAdmin).ToList();
+        var teacherRecords = records.Where(x => x.User != null && x.User.IsTeacher && !x.User.IsAdmin).ToList();
 
         var missing = activeStudents
-            .Where(u => !records.Any(r => r.UserId == u.Id))
+            .Where(u => !studentRecords.Any(r => r.UserId == u.Id))
             .OrderBy(u => u.FullName)
             .ToList();
 
@@ -54,10 +57,13 @@ public class AttendanceController : Controller
             Today = DateTime.UtcNow,
             SelectedDate = selectedDate,
             ActiveStudentCount = activeStudents.Count,
+            ActiveTeacherCount = activeTeacherCount,
             LocalAttendanceTimes = records.ToDictionary(
                 x => x.Id,
                 x => TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(x.AttendanceTimeUtc, DateTimeKind.Utc), timeZone).ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture)),
             TodayAttendance = records,
+            StudentAttendance = studentRecords,
+            TeacherAttendance = teacherRecords,
             MissingPeople = missing
         };
 
@@ -68,6 +74,17 @@ public class AttendanceController : Controller
     [HttpGet]
     public async Task<IActionResult> ExportCsv(string? date)
     {
+        return await ExportAttendanceCsv(date, teachers: false);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportTeachersCsv(string? date)
+    {
+        return await ExportAttendanceCsv(date, teachers: true);
+    }
+
+    private async Task<IActionResult> ExportAttendanceCsv(string? date, bool teachers)
+    {
         var current = await GetCurrentUserAsync();
         if (current == null || (!current.IsTeacher && !current.IsAdmin)) return Forbid();
 
@@ -76,18 +93,20 @@ public class AttendanceController : Controller
         var (dateStartUtc, dateEndUtc) = GetUtcDayRange(selectedDate, timeZone);
         var records = await _db.AttendanceRecords
             .Where(x => !x.IsDeleted && x.AttendanceTimeUtc >= dateStartUtc && x.AttendanceTimeUtc < dateEndUtc)
-            .Include(x => x.User)
+            .Include(x => x.User).ThenInclude(x => x!.SchoolClass)
+            .Include(x => x.User).ThenInclude(x => x!.SchoolLevel)
+            .Where(x => teachers ? x.User!.IsTeacher && !x.User.IsAdmin : !x.User!.IsTeacher && !x.User.IsAdmin)
             .OrderBy(x => x.User!.FullName)
             .ToListAsync();
 
         var csv = new StringBuilder();
-        csv.AppendLine("الاسم,النوع,الفصل,المرحلة,تاريخ الحضور,الوقت,طريقة التسجيل");
+        csv.AppendLine("الاسم,اسم المستخدم,الفصل,المرحلة,تاريخ الحضور,الوقت,طريقة التسجيل");
         foreach (var record in records)
         {
             csv.AppendLine(string.Join(',', new[]
             {
                 Csv(record.User?.FullName),
-                Csv(record.User?.IsTeacher == true ? "خادم" : "مخدوم"),
+                Csv(record.User?.UserName),
                 Csv(record.User?.SchoolClass?.Name ?? record.User?.ClassName),
                 Csv(record.User?.SchoolLevel?.Name ?? record.User?.Level),
                 Csv(TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(record.AttendanceTimeUtc, DateTimeKind.Utc), timeZone).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
@@ -97,7 +116,8 @@ public class AttendanceController : Controller
         }
 
         var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
-        return File(bytes, "text/csv; charset=utf-8", $"attendance-{selectedDate:yyyy-MM-dd}.csv");
+        var roleLabel = teachers ? "teachers" : "students";
+        return File(bytes, "text/csv; charset=utf-8", $"attendance-{roleLabel}-{selectedDate:yyyy-MM-dd}.csv");
     }
 
     [HttpPost]
@@ -147,9 +167,17 @@ public class AttendanceController : Controller
 
         _db.AttendanceRecords.Add(record);
         await _db.SaveChangesAsync();
+        await LogAttendanceAsync(record, user, current);
+
+        if (!user.IsTeacher && !user.IsAdmin)
+        {
+            await AwardAttendancePointAsync(record, current);
+        }
 
         TempData["SuccessMessage"] = $"تم تسجيل حضور {user.FullName} بنجاح.";
-        return RedirectToAction(nameof(Questionnaire), new { attendanceId = record.Id });
+        return user.IsTeacher || user.IsAdmin
+            ? RedirectToAction(nameof(Index), new { date = selectedDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) })
+            : RedirectToAction(nameof(Questionnaire), new { attendanceId = record.Id });
     }
 
     [HttpPost]
@@ -191,9 +219,17 @@ public class AttendanceController : Controller
 
         _db.AttendanceRecords.Add(record);
         await _db.SaveChangesAsync();
+        await LogAttendanceAsync(record, user, current);
+
+        if (!user.IsTeacher && !user.IsAdmin)
+        {
+            await AwardAttendancePointAsync(record, current);
+        }
 
         TempData["SuccessMessage"] = $"تم تسجيل حضور {user.FullName} بنجاح.";
-        return RedirectToAction(nameof(Questionnaire), new { attendanceId = record.Id });
+        return user.IsTeacher || user.IsAdmin
+            ? RedirectToAction(nameof(Index), new { date = selectedDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) })
+            : RedirectToAction(nameof(Questionnaire), new { attendanceId = record.Id });
     }
 
     [HttpGet]
@@ -220,8 +256,8 @@ public class AttendanceController : Controller
                 UserId = u.Id,
                 FullName = u.FullName,
                 AccountType = u.IsTeacher ? "خادم" : "مخدوم",
-                ClassName = u.ClassName,
-                Level = u.Level,
+                ClassName = u.SchoolClass != null ? u.SchoolClass.Name : u.ClassName,
+                Level = u.SchoolLevel != null ? u.SchoolLevel.Name : u.Level,
                 QrCodeValue = u.QrCodeValue
             })
             .ToListAsync();
@@ -256,7 +292,7 @@ public class AttendanceController : Controller
         var attendanceLocalDate = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(record.AttendanceTimeUtc, DateTimeKind.Utc), timeZone);
         var currentDay = attendanceLocalDate.Day;
         var applicableQuestions = questions
-            .Where(q => q.Code == "mass" || q.Code == "samamsha" || (q.Code == "confession" && currentDay >= 1 && currentDay <= 7))
+            .Where(q => IsQuestionApplicable(q, currentDay))
             .ToList();
 
         ViewBag.AttendanceUser = record.User;
@@ -266,7 +302,7 @@ public class AttendanceController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SubmitQuestionnaire(int attendanceId, int? mass, int? samamsha, int? confession)
+    public async Task<IActionResult> SubmitQuestionnaire(int attendanceId, List<int>? answeredQuestionIds)
     {
         var current = await GetCurrentUserAsync();
         if (current == null || (!current.IsTeacher && !current.IsAdmin))
@@ -283,6 +319,11 @@ public class AttendanceController : Controller
             return NotFound();
         }
 
+        if (record.User.IsTeacher || record.User.IsAdmin)
+        {
+            return Forbid();
+        }
+
         if (await _db.AttendanceQuestionnaireSubmissions.AnyAsync(x => x.AttendanceRecordId == attendanceId))
         {
             TempData["WarningMessage"] = "تم إرسال نموذج الأسئلة من قبل لهذا الحضور.";
@@ -295,6 +336,7 @@ public class AttendanceController : Controller
             .ToListAsync();
         var timeZone = await GetSchoolTimeZoneAsync();
         var attendanceLocalDate = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(record.AttendanceTimeUtc, DateTimeKind.Utc), timeZone);
+        var answered = (answeredQuestionIds ?? new List<int>()).ToHashSet();
 
         var submission = new AttendanceQuestionnaireSubmission
         {
@@ -306,16 +348,10 @@ public class AttendanceController : Controller
 
         foreach (var question in allQuestions)
         {
-            var value = question.Code switch
-            {
-                "mass" => mass == 1,
-                "samamsha" => samamsha == 1,
-                "confession" => confession == 1,
-                _ => false
-            };
+            var applicable = IsQuestionApplicable(question, attendanceLocalDate.Day);
+            var value = applicable && answered.Contains(question.Id);
 
-            if ((question.Code == "mass" || question.Code == "samamsha") ||
-                (question.Code == "confession" && attendanceLocalDate.Day >= 1 && attendanceLocalDate.Day <= 7))
+            if (applicable)
             {
                 var answer = new AttendanceQuestionAnswer
                 {
@@ -327,8 +363,7 @@ public class AttendanceController : Controller
                 submission.Answers.Add(answer);
                 if (value)
                 {
-                    var delta = question.PointsAwarded;
-                    await CreateTransactionAsync(record.UserId, current.Id, delta, question.DisplayText, "AttendanceQuestionnaire", attendanceId);
+                    await CreateTransactionAsync(record.UserId, current.Id, question.PointsAwarded, question.DisplayText, "AttendanceQuestionnaire", attendanceId, $"question:{attendanceId}:{question.Id}");
                 }
             }
         }
@@ -413,8 +448,50 @@ public class AttendanceController : Controller
         return $"\"{escaped}\"";
     }
 
-    private async Task CreateTransactionAsync(string studentId, string teacherId, int pointsDelta, string reason, string sourceType, int attendanceId)
+    private static bool IsQuestionApplicable(AttendanceQuestionDefinition question, int day)
     {
+        if (!question.StartDayOfMonth.HasValue && !question.EndDayOfMonth.HasValue) return true;
+        if (question.StartDayOfMonth.HasValue && !question.EndDayOfMonth.HasValue) return day >= question.StartDayOfMonth.Value;
+        if (!question.StartDayOfMonth.HasValue && question.EndDayOfMonth.HasValue) return day <= question.EndDayOfMonth.Value;
+        var start = question.StartDayOfMonth!.Value;
+        var end = question.EndDayOfMonth!.Value;
+        return start <= end ? day >= start && day <= end : day >= start || day <= end;
+    }
+
+    private async Task AwardAttendancePointAsync(AttendanceRecord record, ApplicationUser current)
+    {
+        var configuredValue = await _db.ApplicationSettings
+            .Where(x => x.Key == "AttendancePoints")
+            .Select(x => x.Value)
+            .FirstOrDefaultAsync();
+        var points = int.TryParse(configuredValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var configuredPoints)
+            ? configuredPoints
+            : 1;
+
+        await CreateTransactionAsync(record.UserId, current.Id, points, "نقطة حضور", "Attendance", record.Id, $"attendance:{record.Id}");
+    }
+
+    private async Task LogAttendanceAsync(AttendanceRecord record, ApplicationUser user, ApplicationUser current)
+    {
+        _db.AuditLogs.Add(new AuditLog
+        {
+            ActorId = current.Id,
+            Action = "AttendanceRegistered",
+            TargetType = "AttendanceRecord",
+            TargetId = record.Id.ToString(CultureInfo.InvariantCulture),
+            Details = $"تسجيل حضور {(user.IsTeacher ? "خادم" : "مخدوم")}: {user.FullName}، الطريقة: {record.RegistrationMethod}",
+            CreatedAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
+    }
+
+    private async Task CreateTransactionAsync(string studentId, string teacherId, int pointsDelta, string reason, string sourceType, int attendanceId, string idempotencyKey)
+    {
+        if (pointsDelta == 0 || await _db.GradingTransactions.AnyAsync(x => x.IdempotencyKey == idempotencyKey))
+        {
+            return;
+        }
+
         var student = await _db.Users.FirstOrDefaultAsync(x => x.Id == studentId);
         if (student == null)
         {
@@ -429,7 +506,7 @@ public class AttendanceController : Controller
             Reason = reason,
             SourceType = sourceType,
             SourceId = attendanceId,
-            IdempotencyKey = Guid.NewGuid().ToString("N"),
+            IdempotencyKey = idempotencyKey,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -438,10 +515,10 @@ public class AttendanceController : Controller
         _db.AuditLogs.Add(new AuditLog
         {
             ActorId = teacherId,
-            Action = "AttendanceQuestionnaireAward",
-            TargetType = "GradingTransaction",
-            TargetId = transaction.Id.ToString(),
-            Details = reason,
+            Action = sourceType == "Attendance" ? "AttendancePointAwarded" : "QuestionPointsAwarded",
+            TargetType = "User",
+            TargetId = studentId,
+            Details = $"{reason}: {pointsDelta} نقطة",
             CreatedAt = DateTime.UtcNow
         });
         await _db.SaveChangesAsync();

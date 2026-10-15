@@ -16,30 +16,31 @@ public class HomeController : Controller
         _db = db;
     }
 
-    [Authorize]
+    [AllowAnonymous]
     public async Task<IActionResult> Index()
     {
-        var currentUserName = User.Identity != null ? User.Identity.Name : null;
-        var user = string.IsNullOrWhiteSpace(currentUserName)
-            ? null
-            : await _db.Users.FirstOrDefaultAsync(x => x.UserName == currentUserName);
-
-        if (user == null)
+        if (User.Identity?.IsAuthenticated == true)
         {
-            return RedirectToAction("Login", "Account");
+            var currentUserName = User.Identity.Name;
+            var user = string.IsNullOrWhiteSpace(currentUserName)
+                ? null
+                : await _db.Users.FirstOrDefaultAsync(x => x.UserName == currentUserName);
+
+            if (user == null) return RedirectToAction("Login", "Account");
+            if (user.IsAdmin) return RedirectToAction("Index", "Admin");
+            if (user.IsTeacher) return RedirectToAction("Index", "Attendance");
+            return RedirectToAction("Dashboard", "Student");
         }
 
-        if (user.IsAdmin)
-        {
-            return RedirectToAction("Index", "Admin");
-        }
+        var topStudents = await _db.Users
+            .Where(x => x.IsActive && !x.IsAdmin && !x.IsTeacher)
+            .OrderByDescending(x => x.GradingBalance)
+            .ThenBy(x => x.FullName)
+            .Take(10)
+            .ToListAsync();
 
-        if (user.IsTeacher)
-        {
-            return RedirectToAction("Index", "Attendance");
-        }
-
-        return RedirectToAction("Dashboard", "Student");
+        ViewData["Title"] = "أسرة بطاركة - مدارس الأحد";
+        return View(new HomeLandingViewModel { TopStudents = topStudents });
     }
 
     [AllowAnonymous]

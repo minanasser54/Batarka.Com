@@ -44,6 +44,7 @@ public class SchoolStructureController : Controller
 
         _db.SchoolLevels.Add(new SchoolLevel { Name = name, SortOrder = sortOrder });
         await _db.SaveChangesAsync();
+        await LogAdminActionAsync("SchoolLevelCreated", "SchoolLevel", "تمت إضافة مرحلة: " + name);
         TempData["SuccessMessage"] = "تمت إضافة المرحلة.";
         return RedirectToAction(nameof(Levels));
     }
@@ -74,6 +75,7 @@ public class SchoolStructureController : Controller
         level.SortOrder = sortOrder;
         await _db.SaveChangesAsync();
         await _db.Users.Where(x => x.SchoolLevelId == id).ExecuteUpdateAsync(setters => setters.SetProperty(x => x.Level, name));
+        await LogAdminActionAsync("SchoolLevelUpdated", "SchoolLevel", $"تعديل المرحلة إلى: {name}", id.ToString());
         TempData["SuccessMessage"] = "تم تعديل بيانات المرحلة.";
         return RedirectToAction(nameof(Levels));
     }
@@ -94,6 +96,7 @@ public class SchoolStructureController : Controller
 
         _db.SchoolLevels.Remove(level);
         await _db.SaveChangesAsync();
+        await LogAdminActionAsync("SchoolLevelDeleted", "SchoolLevel", "حذف مرحلة: " + level.Name, id.ToString());
         TempData["SuccessMessage"] = "تم حذف المرحلة.";
         return RedirectToAction(nameof(Levels));
     }
@@ -126,6 +129,7 @@ public class SchoolStructureController : Controller
 
         _db.SchoolClasses.Add(new SchoolClass { Name = name, SchoolLevelId = schoolLevelId });
         await _db.SaveChangesAsync();
+        await LogAdminActionAsync("SchoolClassCreated", "SchoolClass", $"إضافة فصل {name} للمرحلة {schoolLevelId}");
         TempData["SuccessMessage"] = "تمت إضافة الفصل.";
         return RedirectToAction(nameof(Classes), new { levelId = schoolLevelId });
     }
@@ -164,6 +168,7 @@ public class SchoolStructureController : Controller
             .SetProperty(x => x.ClassName, name)
             .SetProperty(x => x.SchoolLevelId, schoolLevelId)
             .SetProperty(x => x.Level, targetLevel.Name));
+        await LogAdminActionAsync("SchoolClassUpdated", "SchoolClass", $"نقل أو تعديل فصل {name} للمرحلة {targetLevel.Name}", id.ToString());
         TempData["SuccessMessage"] = "تم تعديل بيانات الفصل.";
         return RedirectToAction(nameof(Classes), new { levelId = schoolLevelId });
     }
@@ -183,6 +188,7 @@ public class SchoolStructureController : Controller
         var levelId = schoolClass.SchoolLevelId;
         _db.SchoolClasses.Remove(schoolClass);
         await _db.SaveChangesAsync();
+        await LogAdminActionAsync("SchoolClassDeleted", "SchoolClass", "حذف فصل: " + schoolClass.Name, id.ToString());
         TempData["SuccessMessage"] = "تم حذف الفصل.";
         return RedirectToAction(nameof(Classes), new { levelId });
     }
@@ -205,15 +211,16 @@ public class SchoolStructureController : Controller
         if (schoolClass == null) return NotFound();
         var students = await GetClassStudentsAsync(id);
         var csv = new StringBuilder();
-        csv.AppendLine("الاسم,اسم المستخدم,الفصل,المرحلة,الرصيد,عدد مرات الحضور,الحالة");
+        csv.AppendLine("الاسم,اسم المستخدم,البريد,الموبايل,العنوان,ملاحظات,الفصل,المرحلة,الرصيد,عدد مرات الحضور,الحالة,تاريخ الإنشاء");
         foreach (var student in students)
         {
             csv.AppendLine(string.Join(',', new[]
             {
-                Csv(student.FullName), Csv(student.UserName), Csv(student.ClassName), Csv(student.Level),
+                Csv(student.FullName), Csv(student.UserName), Csv(student.Email), Csv(student.Mobile), Csv(student.Address), Csv(student.Notes), Csv(student.ClassName), Csv(student.Level),
                 Csv(student.GradingBalance.ToString(CultureInfo.InvariantCulture)),
                 Csv(student.TotalAttendance.ToString(CultureInfo.InvariantCulture)),
-                Csv(student.IsActive ? "نشط" : "متوقف")
+                Csv(student.IsActive ? "نشط" : "متوقف"),
+                Csv(student.CreatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
             }));
         }
 
@@ -238,15 +245,16 @@ public class SchoolStructureController : Controller
         if (level == null) return NotFound();
         var students = await GetLevelStudentsAsync(id);
         var csv = new StringBuilder();
-        csv.AppendLine("الاسم,اسم المستخدم,الفصل,المرحلة,الرصيد,عدد مرات الحضور,الحالة");
+        csv.AppendLine("الاسم,اسم المستخدم,البريد,الموبايل,العنوان,ملاحظات,الفصل,المرحلة,الرصيد,عدد مرات الحضور,الحالة,تاريخ الإنشاء");
         foreach (var student in students)
         {
             csv.AppendLine(string.Join(',', new[]
             {
-                Csv(student.FullName), Csv(student.UserName), Csv(student.ClassName), Csv(student.Level),
+                Csv(student.FullName), Csv(student.UserName), Csv(student.Email), Csv(student.Mobile), Csv(student.Address), Csv(student.Notes), Csv(student.ClassName), Csv(student.Level),
                 Csv(student.GradingBalance.ToString(CultureInfo.InvariantCulture)),
                 Csv(student.TotalAttendance.ToString(CultureInfo.InvariantCulture)),
-                Csv(student.IsActive ? "نشط" : "متوقف")
+                Csv(student.IsActive ? "نشط" : "متوقف"),
+                Csv(student.CreatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
             }));
         }
 
@@ -265,6 +273,10 @@ public class SchoolStructureController : Controller
                 UserId = x.Id,
                 FullName = x.FullName,
                 UserName = x.UserName ?? string.Empty,
+                Email = x.Email,
+                Mobile = x.Mobile,
+                Address = x.Address,
+                Notes = x.Notes,
                 ClassName = x.SchoolClass != null ? x.SchoolClass.Name : x.ClassName,
                 Level = x.SchoolLevel != null ? x.SchoolLevel.Name : x.Level,
                 SchoolLevelId = x.SchoolLevelId,
@@ -286,6 +298,10 @@ public class SchoolStructureController : Controller
                 UserId = x.Id,
                 FullName = x.FullName,
                 UserName = x.UserName ?? string.Empty,
+                Email = x.Email,
+                Mobile = x.Mobile,
+                Address = x.Address,
+                Notes = x.Notes,
                 ClassName = x.SchoolClass != null ? x.SchoolClass.Name : x.ClassName,
                 Level = x.SchoolLevel != null ? x.SchoolLevel.Name : x.Level,
                 SchoolLevelId = x.SchoolLevelId,
@@ -300,6 +316,26 @@ public class SchoolStructureController : Controller
     private async Task LoadLevelsAsync()
     {
         ViewBag.Levels = await _db.SchoolLevels.OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToListAsync();
+    }
+
+    private async Task LogAdminActionAsync(string action, string targetType, string details, string? targetId = null)
+    {
+        var userName = User.Identity?.Name;
+        var actor = string.IsNullOrWhiteSpace(userName)
+            ? null
+            : await _db.Users.FirstOrDefaultAsync(x => x.UserName == userName);
+        if (actor == null) return;
+
+        _db.AuditLogs.Add(new AuditLog
+        {
+            ActorId = actor.Id,
+            Action = action,
+            TargetType = targetType,
+            TargetId = targetId,
+            Details = details,
+            CreatedAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
     }
 
     private static string Csv(string? value) => $"\"{(value ?? string.Empty).Replace("\"", "\"\"")}\"";

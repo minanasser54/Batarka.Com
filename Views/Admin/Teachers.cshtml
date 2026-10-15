@@ -10,6 +10,8 @@
                 <tr>
                     <th>الاسم</th>
                     <th>اسم المستخدم</th>
+                    <th>الفصل</th>
+                    <th>المرحلة</th>
                     <th>الحالة</th>
                     <th>تاريخ الإنشاء</th>
                     <th>آخر تسجيل دخول</th>
@@ -24,10 +26,15 @@
                         <tr>
                             <td>@item.FullName</td>
                             <td>@item.UserName</td>
+                            <td>@(item.ClassName ?? "—")</td>
+                            <td>@(item.Level ?? "—")</td>
                             <td>@(item.IsActive ? "نشط" : "متوقف")</td>
                             <td>@item.CreatedAt.ToString("dd/MM/yyyy")</td>
                             <td>@(item.LastLoginAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
-                            <td><a asp-action="EditUser" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">تعديل</a></td>
+                            <td class="d-flex gap-2">
+                                <a asp-action="EditUser" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">تعديل</a>
+                                <a asp-action="ResetPassword" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">تغيير كلمة المرور</a>
+                            </td>
                         </tr>
                     }
                 }
