@@ -139,7 +139,7 @@ else
             var fireCount = card.Reactions.Count(r => r.ReactionType == "fire");
             var clapCount = card.Reactions.Count(r => r.ReactionType == "clap");
 
-            <div class="col">
+            <div class="col" id="card-@card.Id">
                 <div class="card h-100 shadow-sm position-relative overflow-hidden border-0" style="transition: transform 0.2s ease, box-shadow 0.2s ease;">
                     <!-- Card Top Image / Placeholder -->
                     <div style="height: 200px; background: linear-gradient(135deg, #1f2937, #374151); position: relative; overflow: hidden;" class="text-center">
@@ -190,7 +190,7 @@ else
                             {
                                 if (isAffordable)
                                 {
-                                    <form asp-action="BuyCard" method="post" onsubmit="return confirm('هل أنت متأكد من شراء كارت [@card.Title] لفريقك [@userTeam.Name] بقيمة @card.Price نقطة؟ سيتم خصم النقاط بالتساوي من رصيد أعضاء الفريق.');">
+                                    <form asp-action="BuyCard" method="post" onsubmit="return confirm('هل أنت متأكد من شراء كارت [@card.Title] لفريقك [@userTeam.Name] بقيمة @card.Price نقطة؟ سيتم خصم النقاط من رصيد أعضاء الفريق دون وصول أي عضو لرصيد سالب.');">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="cardId" value="@card.Id" />
                                         <button type="submit" class="btn btn-success w-100 fw-bold">
@@ -215,37 +215,41 @@ else
 
                         <!-- Reactions Bar -->
                         <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top small">
-                            <div class="d-flex gap-1">
-                                <form asp-action="AddReaction" method="post" class="d-inline">
+                            <div class="d-flex gap-1 reaction-group">
+                                <form asp-action="AddReaction" method="post" class="d-inline reaction-form">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="cardId" value="@card.Id" />
                                     <input type="hidden" name="reactionType" value="like" />
+                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString#card-@card.Id" />
                                     <button type="submit" class="btn btn-sm btn-outline-light text-dark border p-1 px-2" title="إعجاب">
-                                        👍 <span class="fw-bold">@likeCount</span>
+                                        👍 <span class="fw-bold reaction-count">@likeCount</span>
                                     </button>
                                 </form>
-                                <form asp-action="AddReaction" method="post" class="d-inline">
+                                <form asp-action="AddReaction" method="post" class="d-inline reaction-form">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="cardId" value="@card.Id" />
                                     <input type="hidden" name="reactionType" value="love" />
+                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString#card-@card.Id" />
                                     <button type="submit" class="btn btn-sm btn-outline-light text-dark border p-1 px-2" title="حب">
-                                        ❤️ <span class="fw-bold">@loveCount</span>
+                                        ❤️ <span class="fw-bold reaction-count">@loveCount</span>
                                     </button>
                                 </form>
-                                <form asp-action="AddReaction" method="post" class="d-inline">
+                                <form asp-action="AddReaction" method="post" class="d-inline reaction-form">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="cardId" value="@card.Id" />
                                     <input type="hidden" name="reactionType" value="fire" />
+                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString#card-@card.Id" />
                                     <button type="submit" class="btn btn-sm btn-outline-light text-dark border p-1 px-2" title="حماس">
-                                        🔥 <span class="fw-bold">@fireCount</span>
+                                        🔥 <span class="fw-bold reaction-count">@fireCount</span>
                                     </button>
                                 </form>
-                                <form asp-action="AddReaction" method="post" class="d-inline">
+                                <form asp-action="AddReaction" method="post" class="d-inline reaction-form">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="cardId" value="@card.Id" />
                                     <input type="hidden" name="reactionType" value="clap" />
+                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString#card-@card.Id" />
                                     <button type="submit" class="btn btn-sm btn-outline-light text-dark border p-1 px-2" title="تصفيق">
-                                        👏 <span class="fw-bold">@clapCount</span>
+                                        👏 <span class="fw-bold reaction-count">@clapCount</span>
                                     </button>
                                 </form>
                             </div>
@@ -277,6 +281,7 @@ else
                                                     <form asp-action="DeleteComment" method="post" class="d-inline ms-1">
                                                         @Html.AntiForgeryToken()
                                                         <input type="hidden" name="commentId" value="@comment.Id" />
+                                                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString#card-@card.Id" />
                                                         <button type="submit" class="btn btn-link text-danger p-0 border-0" style="font-size: 11px;" title="حذف التعليق" onclick="return confirm('حذف هذا التعليق؟');">✕</button>
                                                     </form>
                                                 }
@@ -290,6 +295,7 @@ else
                                     <form asp-action="AddComment" method="post" class="d-flex gap-1">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="cardId" value="@card.Id" />
+                                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString#card-@card.Id" />
                                         <input type="text" name="content" class="form-control form-control-sm" placeholder="أضف تعليقك..." required maxlength="500" />
                                         <button type="submit" class="btn btn-sm btn-primary">إرسال</button>
                                     </form>
@@ -308,4 +314,42 @@ else
             </div>
         }
     </div>
+}
+
+@section Scripts {
+    <script>
+        // Progressive enhancement for reaction clicks: update dynamically if fetch succeeds
+        document.querySelectorAll('.reaction-form').forEach(form => {
+            form.addEventListener('submit', function (e) {
+                // If browser supports fetch and FormData, use ajax for ultra smooth UX
+                if (window.fetch && window.FormData) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data && data.success && data.reactions) {
+                            const group = form.closest('.reaction-group');
+                            const typeMap = { 'like': '👍', 'love': '❤️', 'fire': '🔥', 'clap': '👏' };
+                            Object.keys(typeMap).forEach(type => {
+                                const btn = group.querySelector(`input[value="${type}"]`)?.closest('form')?.querySelector('.reaction-count');
+                                if (btn) {
+                                    btn.textContent = data.reactions[type] || 0;
+                                }
+                            });
+                        } else {
+                            form.submit();
+                        }
+                    })
+                    .catch(() => {
+                        form.submit();
+                    });
+                }
+            });
+        });
+    </script>
 }

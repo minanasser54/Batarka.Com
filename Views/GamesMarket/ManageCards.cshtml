@@ -105,6 +105,14 @@
                                             تعديل
                                         </a>
 
+                                        <form asp-action="DuplicateCard" asp-route-id="@card.Id" method="post" class="d-inline" onsubmit="var count = prompt('كم عدد النسخ المطلوب طرحها في السوق من كارت [@card.Title]؟', '1'); if(!count || isNaN(count) || count < 1) return false; this.querySelector('input[name=count]').value = parseInt(count); return true;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="count" value="1" />
+                                            <button type="submit" class="btn btn-sm btn-outline-info" title="طرح نسخ جديدة من هذا الكارت في السوق">
+                                                🔄 تكرار
+                                            </button>
+                                        </form>
+
                                         @if (card.IsSold && !card.IsUsed)
                                         {
                                             <form asp-action="MarkCardAsUsed" asp-route-id="@card.Id" method="post" class="d-inline" onsubmit="return confirm('تأكيد استهلاك الكارت في النشاط/اللعبة؟');">

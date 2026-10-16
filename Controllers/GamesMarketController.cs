@@ -122,48 +122,113 @@ public class GamesMarketController : Controller
                 return RedirectToAction(nameof(Index));
             }
 
-            int teamBalance = team.Members.Sum(m => m.Student.GradingBalance);
-            if (teamBalance < card.Price)
+            // Calculate total positive purchasing power
+            var members = team.Members.ToList();
+            int teamPositiveBalance = members.Sum(m => Math.Max(0, m.Student.GradingBalance));
+            if (teamPositiveBalance < card.Price)
             {
-                TempData["ErrorMessage"] = $"رصيد الفريق ({teamBalance} نقطة) لا يكفي لشراء هذا الكارت ({card.Price} نقطة).";
+                TempData["ErrorMessage"] = $"رصيد الفريق المتاح ({teamPositiveBalance} نقطة) لا يكفي لشراء هذا الكارت ({card.Price} نقطة).";
                 return RedirectToAction(nameof(Index));
             }
 
-            // Deduction calculation per Requirement 3:
-            // "each individual_grades -= int(price/team members) but the whole item price should not be exceeded"
-            int memberCount = team.Members.Count;
-            int baseDeduction = card.Price / memberCount;
-            int remainder = card.Price % memberCount;
+            // Requirement 2:
+            // "handle the subtraction of item price to not get individuals balance to -ve instead take from rich students till zeros"
+            int remainingToDeduct = card.Price;
+            var studentDeductions = members.ToDictionary(m => m.Student.Id, m => 0);
+            var availableBalances = members.ToDictionary(m => m.Student.Id, m => Math.Max(0, m.Student.GradingBalance));
 
-            var membersList = team.Members.OrderBy(m => m.JoinedAt).ToList();
-            int totalDeducted = 0;
-
-            for (int i = 0; i < memberCount; i++)
+            while (remainingToDeduct > 0)
             {
-                var member = membersList[i];
-                int memberDeduction = baseDeduction + (i < remainder ? 1 : 0);
-                totalDeducted += memberDeduction;
+                var eligibleMemberIds = availableBalances
+                    .Where(kvp => kvp.Value > 0)
+                    .Select(kvp => kvp.Key)
+                    .ToList();
 
-                member.Student.GradingBalance -= memberDeduction;
-
-                _db.GradingTransactions.Add(new GradingTransaction
+                if (eligibleMemberIds.Count == 0)
                 {
-                    StudentId = member.Student.Id,
-                    TeacherId = current.Id,
-                    PointsDelta = -memberDeduction,
-                    Reason = $"شراء كارت: {card.Title} للفريق ({team.Name})",
-                    SourceType = "MagicCardPurchase",
-                    IdempotencyKey = $"{member.Student.Id}:{card.Id}:buy:{DateTime.UtcNow.Ticks}",
-                    CreatedAt = DateTime.UtcNow
-                });
+                    break;
+                }
 
-                _db.MagicCardPurchaseDeductions.Add(new MagicCardPurchaseDeduction
+                int count = eligibleMemberIds.Count;
+                int targetShare = remainingToDeduct / count;
+                int rem = remainingToDeduct % count;
+
+                if (targetShare == 0)
                 {
-                    CardId = card.Id,
-                    StudentId = member.Student.Id,
-                    PointsDeducted = memberDeduction,
-                    CreatedAt = DateTime.UtcNow
-                });
+                    var richest = eligibleMemberIds
+                        .OrderByDescending(id => availableBalances[id])
+                        .Take(remainingToDeduct)
+                        .ToList();
+
+                    foreach (var id in richest)
+                    {
+                        studentDeductions[id] += 1;
+                        availableBalances[id] -= 1;
+                    }
+                    remainingToDeduct = 0;
+                    break;
+                }
+
+                var constrainedMembers = eligibleMemberIds
+                    .Where(id => availableBalances[id] < targetShare)
+                    .ToList();
+
+                if (constrainedMembers.Count > 0)
+                {
+                    foreach (var id in constrainedMembers)
+                    {
+                        int take = availableBalances[id];
+                        studentDeductions[id] += take;
+                        remainingToDeduct -= take;
+                        availableBalances[id] = 0;
+                    }
+                    continue;
+                }
+
+                var richestForRem = eligibleMemberIds
+                    .OrderByDescending(id => availableBalances[id])
+                    .Take(rem)
+                    .ToHashSet();
+
+                foreach (var id in eligibleMemberIds)
+                {
+                    int share = targetShare + (richestForRem.Contains(id) ? 1 : 0);
+                    studentDeductions[id] += share;
+                    availableBalances[id] -= share;
+                }
+
+                remainingToDeduct = 0;
+                break;
+            }
+
+            int totalDeducted = 0;
+            foreach (var member in members)
+            {
+                int deduction = studentDeductions[member.Student.Id];
+                if (deduction > 0)
+                {
+                    totalDeducted += deduction;
+                    member.Student.GradingBalance -= deduction;
+
+                    _db.GradingTransactions.Add(new GradingTransaction
+                    {
+                        StudentId = member.Student.Id,
+                        TeacherId = current.Id,
+                        PointsDelta = -deduction,
+                        Reason = $"شراء كارت: {card.Title} للفريق ({team.Name})",
+                        SourceType = "MagicCardPurchase",
+                        IdempotencyKey = $"{member.Student.Id}:{card.Id}:buy:{DateTime.UtcNow.Ticks}",
+                        CreatedAt = DateTime.UtcNow
+                    });
+
+                    _db.MagicCardPurchaseDeductions.Add(new MagicCardPurchaseDeduction
+                    {
+                        CardId = card.Id,
+                        StudentId = member.Student.Id,
+                        PointsDeducted = deduction,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
             }
 
             // Mark card as sold
@@ -265,12 +330,17 @@ public class GamesMarketController : Controller
     }
 
     // 5. Reacts (Requirement 12)
+    // 5. Reacts (Requirement 12 & Requirement 1: redirect check)
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddReaction(int cardId, string reactionType)
+    public async Task<IActionResult> AddReaction(int cardId, string reactionType, string? returnUrl = null)
     {
         var current = await GetCurrentUserAsync();
-        if (current == null) return Json(new { success = false, message = "سجل الدخول أولاً." });
+        if (current == null)
+        {
+            if (IsAjaxRequest()) return Json(new { success = false, message = "سجل الدخول أولاً." });
+            return RedirectToAction("Login", "Account");
+        }
 
         reactionType = string.IsNullOrWhiteSpace(reactionType) ? "like" : reactionType.Trim().ToLowerInvariant();
 
@@ -304,30 +374,50 @@ public class GamesMarketController : Controller
 
         await _db.SaveChangesAsync();
 
-        var reactions = await _db.MarketCardReactions
-            .Where(r => r.CardId == cardId)
-            .GroupBy(r => r.ReactionType)
-            .Select(g => new { type = g.Key, count = g.Count() })
-            .ToDictionaryAsync(g => g.type, g => g.count);
+        if (IsAjaxRequest())
+        {
+            var reactions = await _db.MarketCardReactions
+                .Where(r => r.CardId == cardId)
+                .GroupBy(r => r.ReactionType)
+                .Select(g => new { type = g.Key, count = g.Count() })
+                .ToDictionaryAsync(g => g.type, g => g.count);
 
-        return Json(new { success = true, reactions });
+            return Json(new { success = true, reactions });
+        }
+
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+
+        return RedirectToAction(nameof(Index), new { cardId = cardId });
     }
 
-    // 6. Comments (Requirement 12)
+    // 6. Comments (Requirement 12 & Requirement 1: redirect check)
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddComment(int cardId, string content)
+    public async Task<IActionResult> AddComment(int cardId, string content, string? returnUrl = null)
     {
         var current = await GetCurrentUserAsync();
-        if (current == null) return Json(new { success = false, message = "سجل الدخول أولاً." });
+        if (current == null)
+        {
+            if (IsAjaxRequest()) return Json(new { success = false, message = "سجل الدخول أولاً." });
+            return RedirectToAction("Login", "Account");
+        }
 
         if (string.IsNullOrWhiteSpace(content))
         {
-            return Json(new { success = false, message = "لا يمكن إضافة تعليق فارغ." });
+            if (IsAjaxRequest()) return Json(new { success = false, message = "لا يمكن إضافة تعليق فارغ." });
+            TempData["ErrorMessage"] = "لا يمكن إضافة تعليق فارغ.";
+            return RedirectToAction(nameof(Index));
         }
 
         var card = await _db.MagicCards.FindAsync(cardId);
-        if (card == null) return Json(new { success = false, message = "الكارت غير موجود." });
+        if (card == null)
+        {
+            if (IsAjaxRequest()) return Json(new { success = false, message = "الكارت غير موجود." });
+            return NotFound();
+        }
 
         var comment = new MarketCardComment
         {
@@ -340,47 +430,77 @@ public class GamesMarketController : Controller
         _db.MarketCardComments.Add(comment);
         await _db.SaveChangesAsync();
 
-        return Json(new
+        if (IsAjaxRequest())
         {
-            success = true,
-            comment = new
+            return Json(new
             {
-                id = comment.Id,
-                userName = current.FullName,
-                content = comment.Content,
-                createdAt = comment.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-            }
-        });
+                success = true,
+                comment = new
+                {
+                    id = comment.Id,
+                    userName = current.FullName,
+                    content = comment.Content,
+                    createdAt = comment.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                }
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+
+        return RedirectToAction(nameof(Index), new { cardId = cardId });
     }
 
     [HttpPost]
     [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteComment(int commentId)
+    public async Task<IActionResult> DeleteComment(int commentId, string? returnUrl = null)
     {
         var comment = await _db.MarketCardComments.FindAsync(commentId);
         if (comment != null)
         {
             comment.IsDeleted = true;
             await _db.SaveChangesAsync();
-            return Json(new { success = true });
+            if (IsAjaxRequest()) return Json(new { success = true });
         }
-        return Json(new { success = false, message = "التعليق غير موجود." });
+        else if (IsAjaxRequest())
+        {
+            return Json(new { success = false, message = "التعليق غير موجود." });
+        }
+
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpPost]
     [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteReaction(int reactionId)
+    public async Task<IActionResult> DeleteReaction(int reactionId, string? returnUrl = null)
     {
         var reaction = await _db.MarketCardReactions.FindAsync(reactionId);
         if (reaction != null)
         {
             _db.MarketCardReactions.Remove(reaction);
             await _db.SaveChangesAsync();
-            return Json(new { success = true });
+            if (IsAjaxRequest()) return Json(new { success = true });
         }
-        return Json(new { success = false });
+        else if (IsAjaxRequest())
+        {
+            return Json(new { success = false });
+        }
+
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+
+        return RedirectToAction(nameof(Index));
     }
 
     // -------------------------------------------------------------
@@ -492,6 +612,43 @@ public class GamesMarketController : Controller
             await _db.SaveChangesAsync();
             TempData["SuccessMessage"] = "تم حذف الكارت بنجاح.";
         }
+        return RedirectToAction(nameof(ManageCards));
+    }
+
+    // Requirement 3: Admin release duplicate / N copies of a card
+    [HttpPost]
+    [Authorize(Roles = "Admin")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DuplicateCard(int id, int count = 1)
+    {
+        var card = await _db.MagicCards.FindAsync(id);
+        if (card == null) return NotFound();
+
+        count = Math.Clamp(count, 1, 50);
+
+        for (int i = 0; i < count; i++)
+        {
+            _db.MagicCards.Add(new MagicCard
+            {
+                Title = card.Title,
+                Description = card.Description,
+                Price = card.Price,
+                ImageUrl = card.ImageUrl,
+                CategoryId = card.CategoryId,
+                IsSold = false,
+                BoughtByTeamId = null,
+                BoughtAt = null,
+                IsUsed = false,
+                UsedAt = null,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        await _db.SaveChangesAsync();
+        TempData["SuccessMessage"] = count == 1
+            ? $"تم تكرار كارت [{card.Title}] وطرح نسخة جديدة منه في السوق بنجاح."
+            : $"تم طرح {count} نسخ جديدة من كارت [{card.Title}] في السوق بنجاح.";
+
         return RedirectToAction(nameof(ManageCards));
     }
 
@@ -884,25 +1041,63 @@ public class GamesMarketController : Controller
         return RedirectToAction(nameof(ManageTeams));
     }
 
+    // Requirement 4: make the team removal remove also owned cards info totally donot forbid team removal for card
     [HttpPost]
     [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteTeam(int id)
     {
-        var team = await _db.Teams.Include(t => t.BoughtCards).FirstOrDefaultAsync(t => t.Id == id);
+        var team = await _db.Teams
+            .Include(t => t.BoughtCards)
+                .ThenInclude(c => c.PurchaseDeductions)
+            .Include(t => t.Members)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
         if (team != null)
         {
-            if (team.BoughtCards.Any(c => c.IsSold))
+            foreach (var card in team.BoughtCards)
             {
-                TempData["ErrorMessage"] = "لا يمكن حذف فريق يمتلك كروت نشطة. يرجى استرجاع الكروت أولاً.";
-                return RedirectToAction(nameof(ManageTeams));
+                card.BoughtByTeamId = null;
+                card.BoughtAt = null;
+                card.IsSold = false;
+                card.IsUsed = false;
+                card.UsedAt = null;
+
+                if (card.PurchaseDeductions.Count > 0)
+                {
+                    _db.MagicCardPurchaseDeductions.RemoveRange(card.PurchaseDeductions);
+                }
             }
 
+            var teamNotifs = await _db.AppNotifications.Where(n => n.TargetTeamId == team.Id).ToListAsync();
+            foreach (var notif in teamNotifs)
+            {
+                notif.TargetTeamId = null;
+            }
+
+            _db.TeamMembers.RemoveRange(team.Members);
             _db.Teams.Remove(team);
+
+            _db.AuditLogs.Add(new AuditLog
+            {
+                ActorId = (await GetCurrentUserAsync())!.Id,
+                Action = "TeamDeleted",
+                TargetType = "Team",
+                TargetId = id.ToString(),
+                Details = $"تم حذف الفريق {team.Name} وإلغاء ارتباط الكروت المملوكة له.",
+                CreatedAt = DateTime.UtcNow
+            });
+
             await _db.SaveChangesAsync();
-            TempData["SuccessMessage"] = "تم حذف الفريق بنجاح.";
+            TempData["SuccessMessage"] = $"تم حذف الفريق [{team.Name}] وإزالة ارتباط الكروت بنجاح.";
         }
         return RedirectToAction(nameof(ManageTeams));
+    }
+
+    private bool IsAjaxRequest()
+    {
+        return Request.Headers.XRequestedWith == "XMLHttpRequest" ||
+               Request.Headers.Accept.ToString().Contains("application/json");
     }
 
     private async Task<ApplicationUser?> GetCurrentUserAsync()

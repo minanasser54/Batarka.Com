@@ -26,8 +26,11 @@ if (databaseProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
     }
 
     builder.Services.AddDbContext<SqlServerApplicationDbContext>(options =>
+    {
         options.UseSqlServer(connectionString, sql =>
-            sql.MigrationsAssembly(typeof(SqlServerApplicationDbContext).Assembly.FullName)));
+            sql.MigrationsAssembly(typeof(SqlServerApplicationDbContext).Assembly.FullName));
+        options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+    });
     builder.Services.AddScoped<ApplicationDbContext>(services =>
         services.GetRequiredService<SqlServerApplicationDbContext>());
 }
@@ -36,7 +39,11 @@ else if (databaseProvider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
 #if DEBUG
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
         ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-    builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(connectionString));
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    {
+        options.UseSqlite(connectionString);
+        options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+    });
 #else
     throw new InvalidOperationException("SQLite is only included in Debug builds. Configure SqlServer for deployment.");
 #endif

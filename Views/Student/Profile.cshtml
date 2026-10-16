@@ -36,6 +36,17 @@
             {
                 <a asp-controller="Admin" asp-action="EditUser" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm">تعديل الحساب</a>
                 <a asp-controller="Admin" asp-action="ResetPassword" asp-route-id="@Model.Id" class="btn btn-outline-warning btn-sm">تغيير كلمة المرور</a>
+                @if (Model.Id != currentUser.Id)
+                {
+                    <form asp-controller="Admin" asp-action="DeleteUser" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا الحساب [@Model.FullName] نهائياً؟');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-danger btn-sm">حذف الحساب</button>
+                    </form>
+                }
+            }
+            else if (currentUser?.IsTeacher == true && !Model.IsTeacher && !Model.IsAdmin)
+            {
+                <a asp-controller="Admin" asp-action="EditUser" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm">تعديل بيانات المخدوم</a>
             }
             @if (!Model.IsTeacher && !Model.IsAdmin && (currentUser?.IsAdmin == true || currentUser?.IsTeacher == true))
             {

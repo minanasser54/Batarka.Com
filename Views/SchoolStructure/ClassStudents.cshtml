@@ -116,9 +116,16 @@
                             <a asp-controller="QrCode" asp-action="ByUser" asp-route-id="@student.UserId" target="_blank" rel="noreferrer" class="btn btn-sm btn-outline-secondary">عرض QR</a>
                             <a asp-controller="Student" asp-action="Profile" asp-route-id="@student.UserId" class="btn btn-sm btn-outline-info">الملف الشخصي</a>
                             <a asp-controller="Grading" asp-action="Index" asp-route-searchTerm="@student.FullName" class="btn btn-sm btn-outline-success">درجات</a>
-                            @if (User.IsInRole("Admin"))
+                            @if (User.IsInRole("Admin") || User.IsInRole("Teacher"))
                             {
                                 <a asp-controller="Admin" asp-action="EditUser" asp-route-id="@student.UserId" class="btn btn-sm btn-outline-primary">تعديل</a>
+                            }
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <form asp-controller="Admin" asp-action="DeleteUser" asp-route-id="@student.UserId" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف حساب [@student.FullName] نهائياً؟');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                                </form>
                             }
                         </td>
                     </tr>

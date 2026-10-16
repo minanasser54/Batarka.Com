@@ -85,7 +85,14 @@
                             <a asp-controller="QrCode" asp-action="ByUser" asp-route-id="@item.UserId" target="_blank" rel="noreferrer" class="btn btn-sm btn-outline-secondary">عرض QR</a>
                             <a asp-controller="Student" asp-action="Profile" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-info">الملف الشخصي</a>
                             <a asp-action="EditUser" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-primary">تعديل</a>
-                            <a asp-action="ResetPassword" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-warning">كلمة المرور</a>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <a asp-action="ResetPassword" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-warning">كلمة المرور</a>
+                                <form asp-action="DeleteUser" asp-route-id="@item.UserId" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف حساب [@item.FullName] نهائياً؟');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                                </form>
+                            }
                             @if (item.SchoolLevelId.HasValue)
                             {
                                 <a asp-controller="SchoolStructure" asp-action="LevelStudents" asp-route-id="@item.SchoolLevelId" class="btn btn-sm btn-outline-secondary">طلاب المرحلة</a>

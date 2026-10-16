@@ -36,6 +36,13 @@
                                 <a asp-controller="Student" asp-action="Profile" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">الملف الشخصي</a>
                                 <a asp-action="EditUser" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">تعديل</a>
                                 <a asp-action="ResetPassword" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">كلمة المرور</a>
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <form asp-action="DeleteUser" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف حساب الخادم [@item.FullName] نهائياً؟');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                                    </form>
+                                }
                             </td>
                         </tr>
                     }

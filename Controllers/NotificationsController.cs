@@ -59,10 +59,14 @@ public class NotificationsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> MarkAsRead(int id)
+    public async Task<IActionResult> MarkAsRead(int id, string? returnUrl = null)
     {
         var current = await GetCurrentUserAsync();
-        if (current == null) return Json(new { success = false });
+        if (current == null)
+        {
+            if (IsAjaxRequest()) return Json(new { success = false });
+            return RedirectToAction("Login", "Account");
+        }
 
         if (!await _db.UserNotificationReads.AnyAsync(r => r.NotificationId == id && r.UserId == current.Id))
         {
@@ -75,7 +79,45 @@ public class NotificationsController : Controller
             await _db.SaveChangesAsync();
         }
 
-        return Json(new { success = true });
+        if (IsAjaxRequest())
+        {
+            return Json(new { success = true });
+        }
+
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Open(int id)
+    {
+        var current = await GetCurrentUserAsync();
+        if (current == null) return RedirectToAction("Login", "Account");
+
+        var notif = await _db.AppNotifications.FindAsync(id);
+        if (notif == null) return RedirectToAction(nameof(Index));
+
+        if (!await _db.UserNotificationReads.AnyAsync(r => r.NotificationId == id && r.UserId == current.Id))
+        {
+            _db.UserNotificationReads.Add(new UserNotificationRead
+            {
+                NotificationId = id,
+                UserId = current.Id,
+                ReadAt = DateTime.UtcNow
+            });
+            await _db.SaveChangesAsync();
+        }
+
+        if (!string.IsNullOrWhiteSpace(notif.LinkUrl) && Url.IsLocalUrl(notif.LinkUrl))
+        {
+            return Redirect(notif.LinkUrl);
+        }
+
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpPost]
@@ -205,6 +247,12 @@ public class NotificationsController : Controller
             TempData["SuccessMessage"] = "تم حذف الإشعار.";
         }
         return RedirectToAction(nameof(Manage));
+    }
+
+    private bool IsAjaxRequest()
+    {
+        return Request.Headers.XRequestedWith == "XMLHttpRequest" ||
+               Request.Headers.Accept.ToString().Contains("application/json");
     }
 
     private async Task<ApplicationUser?> GetCurrentUserAsync()

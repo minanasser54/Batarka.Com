@@ -51,12 +51,13 @@ public class AdminController : Controller
 
     public async Task<IActionResult> Students(string? search, int? schoolClassId, int? schoolLevelId, string? className, string? level, string? activeStatus)
     {
-        if (!await IsAdminAsync())
+        var actor = await GetCurrentUserAsync();
+        if (actor == null || (!actor.IsAdmin && !actor.IsTeacher))
         {
             return Forbid();
         }
 
-        var query = _db.Users.Where(u => !u.IsAdmin && !u.IsTeacher);
+        var query = _db.Users.Where(u => !u.IsAdmin && !u.IsTeacher && u.DeletedAt == null);
         if (activeStatus == "active") query = query.Where(u => u.IsActive);
         if (activeStatus == "inactive") query = query.Where(u => !u.IsActive);
 
@@ -109,6 +110,8 @@ public class AdminController : Controller
         ViewBag.Levels = await _db.SchoolLevels.OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToListAsync();
         ViewBag.SelectedClassId = schoolClassId;
         ViewBag.SelectedLevelId = schoolLevelId;
+        ViewBag.IsAdmin = actor.IsAdmin;
+        ViewBag.IsTeacher = actor.IsTeacher;
         return View(students);
     }
 
@@ -120,7 +123,7 @@ public class AdminController : Controller
         }
 
         var teachers = await _db.Users
-            .Where(u => u.IsTeacher || u.IsAdmin)
+            .Where(u => (u.IsTeacher || u.IsAdmin) && u.DeletedAt == null)
             .OrderByDescending(u => u.LastLoginAt)
             .Select(u => new
             {
@@ -233,12 +236,24 @@ public class AdminController : Controller
     [HttpGet]
     public async Task<IActionResult> EditUser(string id)
     {
-        if (!await IsAdminAsync()) return Forbid();
+        var actor = await GetCurrentUserAsync();
+        if (actor == null || (!actor.IsAdmin && !actor.IsTeacher)) return Forbid();
 
         var user = await _userManager.FindByIdAsync(id);
-        if (user == null) return NotFound();
+        if (user == null || user.DeletedAt != null) return NotFound();
+
+        // Teachers can ONLY edit students
+        if (actor.IsTeacher && !actor.IsAdmin)
+        {
+            if (user.IsTeacher || user.IsAdmin)
+            {
+                return Forbid();
+            }
+        }
 
         await LoadSchoolOptionsAsync();
+        ViewBag.IsAdmin = actor.IsAdmin;
+        ViewBag.IsTeacher = actor.IsTeacher;
         return View(new EditUserViewModel
         {
             Id = user.Id,
@@ -258,10 +273,19 @@ public class AdminController : Controller
     public async Task<IActionResult> EditUser(EditUserViewModel model)
     {
         var actor = await GetCurrentUserAsync();
-        if (actor == null || !actor.IsAdmin) return Forbid();
+        if (actor == null || (!actor.IsAdmin && !actor.IsTeacher)) return Forbid();
 
         var user = await _userManager.FindByIdAsync(model.Id);
-        if (user == null) return NotFound();
+        if (user == null || user.DeletedAt != null) return NotFound();
+
+        // Teachers can ONLY edit students
+        if (actor.IsTeacher && !actor.IsAdmin)
+        {
+            if (user.IsTeacher || user.IsAdmin)
+            {
+                return Forbid();
+            }
+        }
 
         var nameOwner = await _userManager.FindByNameAsync(model.UserName);
         if (nameOwner != null && nameOwner.Id != user.Id)
@@ -280,6 +304,8 @@ public class AdminController : Controller
         if (!ModelState.IsValid)
         {
             await LoadSchoolOptionsAsync();
+            ViewBag.IsAdmin = actor.IsAdmin;
+            ViewBag.IsTeacher = actor.IsTeacher;
             return View(model);
         }
 
@@ -302,6 +328,8 @@ public class AdminController : Controller
         {
             foreach (var error in result.Errors) ModelState.AddModelError(string.Empty, error.Description);
             await LoadSchoolOptionsAsync();
+            ViewBag.IsAdmin = actor.IsAdmin;
+            ViewBag.IsTeacher = actor.IsTeacher;
             return View(model);
         }
 
@@ -311,12 +339,100 @@ public class AdminController : Controller
             Action = "UserUpdated",
             TargetType = "User",
             TargetId = user.Id,
-            Details = "تم تحديث بيانات الحساب من الإدارة.",
+            Details = $"تم تحديث بيانات الحساب بواسطة {(actor.IsAdmin ? "المشرف" : "الخادم")}: {actor.FullName}",
             CreatedAt = DateTime.UtcNow
         });
         await _db.SaveChangesAsync();
-        TempData["SuccessMessage"] = "تم تحديث بيانات الحساب.";
+        TempData["SuccessMessage"] = "تم تحديث بيانات الحساب بنجاح.";
+        if (actor.IsTeacher && !actor.IsAdmin)
+        {
+            return RedirectToAction(nameof(Students));
+        }
         return RedirectToAction(user.IsTeacher || user.IsAdmin ? nameof(Teachers) : nameof(Students));
+    }
+
+    [HttpPost]
+    [Authorize(Roles = "Admin")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteUser(string id)
+    {
+        var actor = await GetCurrentUserAsync();
+        if (actor == null || !actor.IsAdmin) return Forbid();
+
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound();
+
+        if (user.Id == actor.Id)
+        {
+            TempData["ErrorMessage"] = "لا يمكنك حذف حسابك الحالي.";
+            return RedirectToAction(nameof(Students));
+        }
+
+        bool isTeacherOrAdmin = user.IsTeacher || user.IsAdmin;
+        string userFullName = user.FullName;
+
+        // Clean up user team memberships
+        var memberships = await _db.TeamMembers.Where(tm => tm.StudentId == user.Id).ToListAsync();
+        if (memberships.Count > 0)
+        {
+            _db.TeamMembers.RemoveRange(memberships);
+        }
+
+        // Clean up user notifications reads
+        var reads = await _db.UserNotificationReads.Where(r => r.UserId == user.Id).ToListAsync();
+        if (reads.Count > 0) _db.UserNotificationReads.RemoveRange(reads);
+
+        // Clean up reactions and comments
+        var reactions = await _db.MarketCardReactions.Where(r => r.UserId == user.Id).ToListAsync();
+        if (reactions.Count > 0) _db.MarketCardReactions.RemoveRange(reactions);
+
+        var comments = await _db.MarketCardComments.Where(c => c.UserId == user.Id).ToListAsync();
+        if (comments.Count > 0) _db.MarketCardComments.RemoveRange(comments);
+
+        // Clean up purchase deductions if any
+        var deductions = await _db.MagicCardPurchaseDeductions.Where(d => d.StudentId == user.Id).ToListAsync();
+        if (deductions.Count > 0) _db.MagicCardPurchaseDeductions.RemoveRange(deductions);
+
+        using var tx = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+            var deleteResult = await _userManager.DeleteAsync(user);
+            if (deleteResult.Succeeded)
+            {
+                await tx.CommitAsync();
+            }
+            else
+            {
+                throw new Exception("Identity delete failed: " + string.Join(", ", deleteResult.Errors.Select(e => e.Description)));
+            }
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            // Soft delete fallback to preserve integrity of historical attendance and audit logs
+            user.IsActive = false;
+            user.DeletedAt = DateTime.UtcNow;
+            user.UserName = $"deleted_{DateTime.UtcNow.Ticks}_{user.UserName}";
+            user.NormalizedUserName = user.UserName.ToUpperInvariant();
+            user.UpdatedAt = DateTime.UtcNow;
+            user.UpdatedById = actor.Id;
+            await _userManager.UpdateAsync(user);
+        }
+
+        _db.AuditLogs.Add(new AuditLog
+        {
+            ActorId = actor.Id,
+            Action = "UserDeleted",
+            TargetType = "User",
+            TargetId = id,
+            Details = $"تم حذف الحساب: {userFullName} بواسطة المشرف {actor.FullName}.",
+            CreatedAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = $"تم حذف حساب [{userFullName}] بنجاح.";
+        return RedirectToAction(isTeacherOrAdmin ? nameof(Teachers) : nameof(Students));
     }
 
     [HttpGet]

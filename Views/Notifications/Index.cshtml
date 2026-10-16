@@ -69,7 +69,7 @@ else
                                 <p class="text-muted mb-1 small">@notif.Message</p>
                                 @if (!string.IsNullOrWhiteSpace(notif.LinkUrl))
                                 {
-                                    <a href="@notif.LinkUrl" class="btn btn-sm btn-link text-decoration-none p-0 small">
+                                    <a asp-action="Open" asp-route-id="@notif.Id" class="btn btn-sm btn-link text-decoration-none p-0 small">
                                         ← عرض التفاصيل
                                     </a>
                                 }
@@ -82,6 +82,7 @@ else
                             {
                                 <form asp-action="MarkAsRead" asp-route-id="@notif.Id" method="post" class="mt-1">
                                     @Html.AntiForgeryToken()
+                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
                                     <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 11px;">
                                         تحديد كمقروء
                                     </button>

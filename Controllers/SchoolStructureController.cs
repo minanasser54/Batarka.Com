@@ -8,7 +8,7 @@ using MyMvcApp10.Models;
 
 namespace MyMvcApp10.Controllers;
 
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin,Teacher")]
 public class SchoolStructureController : Controller
 {
     private readonly ApplicationDbContext _db;
@@ -27,6 +27,7 @@ public class SchoolStructureController : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateLevel(string name, int sortOrder)
     {
@@ -50,6 +51,7 @@ public class SchoolStructureController : Controller
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> EditLevel(int id)
     {
         var level = await _db.SchoolLevels.FindAsync(id);
@@ -57,6 +59,7 @@ public class SchoolStructureController : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditLevel(int id, string name, int sortOrder)
     {
@@ -81,6 +84,7 @@ public class SchoolStructureController : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteLevel(int id)
     {
@@ -112,6 +116,7 @@ public class SchoolStructureController : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateClass(string name, int schoolLevelId)
     {
@@ -135,6 +140,7 @@ public class SchoolStructureController : Controller
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> EditClass(int id)
     {
         var schoolClass = await _db.SchoolClasses.FindAsync(id);
@@ -144,6 +150,7 @@ public class SchoolStructureController : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditClass(int id, string name, int schoolLevelId)
     {
@@ -174,6 +181,7 @@ public class SchoolStructureController : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteClass(int id)
     {
@@ -266,7 +274,7 @@ public class SchoolStructureController : Controller
     private Task<List<AdminStudentListItemViewModel>> GetLevelStudentsAsync(int id)
     {
         return _db.Users
-            .Where(x => x.SchoolLevelId == id && !x.IsTeacher && !x.IsAdmin)
+            .Where(x => x.SchoolLevelId == id && !x.IsTeacher && !x.IsAdmin && x.DeletedAt == null)
             .OrderBy(x => x.SchoolClass!.Name)
             .ThenBy(x => x.FullName)
             .Select(x => new AdminStudentListItemViewModel
@@ -292,7 +300,7 @@ public class SchoolStructureController : Controller
     private Task<List<AdminStudentListItemViewModel>> GetClassStudentsAsync(int id)
     {
         return _db.Users
-            .Where(x => x.SchoolClassId == id && !x.IsTeacher && !x.IsAdmin)
+            .Where(x => x.SchoolClassId == id && !x.IsTeacher && !x.IsAdmin && x.DeletedAt == null)
             .OrderBy(x => x.FullName)
             .Select(x => new AdminStudentListItemViewModel
             {
@@ -317,7 +325,7 @@ public class SchoolStructureController : Controller
     private Task<List<AdminTeacherListItemViewModel>> GetClassTeachersAsync(int id)
     {
         return _db.Users
-            .Where(x => x.SchoolClassId == id && (x.IsTeacher || x.IsAdmin))
+            .Where(x => x.SchoolClassId == id && (x.IsTeacher || x.IsAdmin) && x.DeletedAt == null)
             .OrderBy(x => x.FullName)
             .Select(x => new AdminTeacherListItemViewModel
             {

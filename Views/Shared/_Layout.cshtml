@@ -27,6 +27,12 @@
                                 <li class="nav-item"><a class="nav-link" asp-controller="Grading" asp-action="Index">تسجيل الدرجات</a></li>
                             }
 
+                            @if (User.IsInRole("Teacher") && !User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Students">📚 المخدومين</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-controller="SchoolStructure" asp-action="Classes">🏫 الفصول</a></li>
+                            }
+
                             @if (User.IsInRole("Admin"))
                             {
                                 <li class="nav-item dropdown">
