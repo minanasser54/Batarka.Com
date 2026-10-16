@@ -201,6 +201,7 @@ public class SchoolStructureController : Controller
         ViewBag.ClassTitle = schoolClass.Name;
         ViewBag.LevelTitle = schoolClass.SchoolLevel.Name;
         ViewBag.ClassId = id;
+        ViewBag.ClassTeachers = await GetClassTeachersAsync(id);
         return View(await GetClassStudentsAsync(id));
     }
 
@@ -309,6 +310,33 @@ public class SchoolStructureController : Controller
                 TotalAttendance = _db.AttendanceRecords.Count(record => record.UserId == x.Id && !record.IsDeleted),
                 IsActive = x.IsActive,
                 CreatedAt = x.CreatedAt
+            })
+            .ToListAsync();
+    }
+
+    private Task<List<AdminTeacherListItemViewModel>> GetClassTeachersAsync(int id)
+    {
+        return _db.Users
+            .Where(x => x.SchoolClassId == id && (x.IsTeacher || x.IsAdmin))
+            .OrderBy(x => x.FullName)
+            .Select(x => new AdminTeacherListItemViewModel
+            {
+                Id = x.Id,
+                FullName = x.FullName,
+                UserName = x.UserName ?? string.Empty,
+                Email = x.Email,
+                Mobile = x.Mobile,
+                Address = x.Address,
+                Notes = x.Notes,
+                ClassName = x.SchoolClass != null ? x.SchoolClass.Name : x.ClassName,
+                Level = x.SchoolLevel != null ? x.SchoolLevel.Name : x.Level,
+                SchoolClassId = x.SchoolClassId,
+                SchoolLevelId = x.SchoolLevelId,
+                IsTeacher = x.IsTeacher,
+                IsAdmin = x.IsAdmin,
+                IsActive = x.IsActive,
+                CreatedAt = x.CreatedAt,
+                LastLoginAt = x.LastLoginAt
             })
             .ToListAsync();
     }

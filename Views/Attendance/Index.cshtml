@@ -65,7 +65,11 @@
                         @foreach (var record in Model.StudentAttendance)
                         {
                             <tr>
-                                <td>@record.User.FullName</td>
+                                <td>
+                                    <a asp-controller="Student" asp-action="Profile" asp-route-id="@record.UserId" class="text-decoration-none fw-bold">
+                                        @record.User.FullName
+                                    </a>
+                                </td>
                                 <td>@record.User.UserName</td>
                                 <td>@(record.User.SchoolClass?.Name ?? record.User.ClassName ?? "—")</td>
                                 <td>@(record.User.SchoolLevel?.Name ?? record.User.Level ?? "—")</td>
@@ -92,7 +96,18 @@
                         @foreach (var record in Model.TeacherAttendance)
                         {
                             <tr>
-                                <td>@record.User.FullName</td>
+                                <td>
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <a asp-controller="Student" asp-action="Profile" asp-route-id="@record.UserId" class="text-decoration-none fw-bold">
+                                            @record.User.FullName
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="fw-bold">@record.User.FullName</span>
+                                    }
+                                </td>
                                 <td>@record.User.UserName</td>
                                 <td>@Model.LocalAttendanceTimes[record.Id]</td>
                                 <td>@record.RegistrationMethod</td>

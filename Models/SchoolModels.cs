@@ -463,9 +463,45 @@ public class AdminAuditListItemViewModel
     public string Action { get; set; } = string.Empty;
     public string? ActorName { get; set; }
     public string? ActorUserName { get; set; }
+    public string? ActorRole { get; set; }
     public string? TargetType { get; set; }
     public string? TargetId { get; set; }
+    public string? TargetName { get; set; }
+    public string? TargetUserName { get; set; }
+    public string? TargetRole { get; set; }
     public string? Details { get; set; }
     public string? Reason { get; set; }
     public DateTime CreatedAt { get; set; }
 }
+
+public class AdminTeacherListItemViewModel
+{
+    public string Id { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
+    public string? Email { get; set; }
+    public string? Mobile { get; set; }
+    public string? Address { get; set; }
+    public string? Notes { get; set; }
+    public string? ClassName { get; set; }
+    public string? Level { get; set; }
+    public int? SchoolClassId { get; set; }
+    public int? SchoolLevelId { get; set; }
+    public bool IsTeacher { get; set; }
+    public bool IsAdmin { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+}
+
+public class GradingStudentDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string? UserName { get; set; }
+    public string? ClassName { get; set; }
+    public string? LevelName { get; set; }
+    public int GradingBalance { get; set; }
+    public string? QrCodeValue { get; set; }
+}
+

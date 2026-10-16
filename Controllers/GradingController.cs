@@ -19,7 +19,7 @@ public class GradingController : Controller
         _userManager = userManager;
     }
 
-    public async Task<IActionResult> Index(string? searchTerm, int? schoolLevelId, int? schoolClassId)
+    public async Task<IActionResult> Index(string? searchTerm, int? schoolLevelId, int? schoolClassId, string? qrCode)
     {
         var current = await GetCurrentUserAsync();
         if (current == null || (!current.IsTeacher && !current.IsAdmin))
@@ -30,10 +30,17 @@ public class GradingController : Controller
         var query = _db.Users
             .Include(x => x.SchoolClass).ThenInclude(x => x!.SchoolLevel)
             .AsQueryable();
-        if (!string.IsNullOrWhiteSpace(searchTerm))
+
+        if (!string.IsNullOrWhiteSpace(qrCode))
+        {
+            var qr = qrCode.Trim();
+            query = query.Where(u => u.QrCodeValue == qr);
+        }
+        else if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var term = searchTerm.Trim();
             query = query.Where(u =>
+                u.QrCodeValue == term ||
                 u.FullName.Contains(term) ||
                 (u.UserName != null && u.UserName.Contains(term)) ||
                 (u.Email != null && u.Email.Contains(term)) ||
@@ -52,6 +59,7 @@ public class GradingController : Controller
             .ToListAsync();
 
         ViewBag.SearchTerm = searchTerm;
+        ViewBag.QrCode = qrCode;
         ViewBag.SelectedLevelId = schoolLevelId;
         ViewBag.SelectedClassId = schoolClassId;
         ViewBag.Levels = await _db.SchoolLevels.OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToListAsync();
@@ -59,14 +67,67 @@ public class GradingController : Controller
         return View(students);
     }
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Apply(string studentId, string action)
+    [HttpGet]
+    public async Task<IActionResult> LiveSearch(string? searchTerm, int? schoolLevelId, int? schoolClassId, string? qrCode)
     {
         var current = await GetCurrentUserAsync();
         if (current == null || (!current.IsTeacher && !current.IsAdmin))
         {
             return Forbid();
+        }
+
+        var query = _db.Users
+            .AsNoTracking()
+            .Where(u => u.IsActive && !u.IsAdmin && !u.IsTeacher);
+
+        if (!string.IsNullOrWhiteSpace(qrCode))
+        {
+            var qr = qrCode.Trim();
+            query = query.Where(u => u.QrCodeValue == qr);
+        }
+        else if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.Trim();
+            query = query.Where(u =>
+                u.QrCodeValue == term ||
+                u.FullName.Contains(term) ||
+                (u.UserName != null && u.UserName.Contains(term)) ||
+                (u.Mobile != null && u.Mobile.Contains(term)) ||
+                (u.Email != null && u.Email.Contains(term)));
+        }
+
+        if (schoolLevelId.HasValue) query = query.Where(u => u.SchoolLevelId == schoolLevelId.Value);
+        if (schoolClassId.HasValue) query = query.Where(u => u.SchoolClassId == schoolClassId.Value);
+
+        var students = await query
+            .OrderBy(u => u.FullName)
+            .Take(50)
+            .Select(u => new GradingStudentDto
+            {
+                Id = u.Id,
+                FullName = u.FullName,
+                UserName = u.UserName,
+                ClassName = u.SchoolClass != null ? u.SchoolClass.Name : u.ClassName,
+                LevelName = u.SchoolLevel != null ? u.SchoolLevel.Name : u.Level,
+                GradingBalance = u.GradingBalance,
+                QrCodeValue = u.QrCodeValue
+            })
+            .ToListAsync();
+
+        return Json(students);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Apply(string studentId, string action)
+    {
+        bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                      (Request.Headers.Accept.ToString()?.Contains("application/json") ?? false);
+
+        var current = await GetCurrentUserAsync();
+        if (current == null || (!current.IsTeacher && !current.IsAdmin))
+        {
+            return isAjax ? Json(new { success = false, message = "غير مصرح لك." }) : Forbid();
         }
 
         var actionMap = new Dictionary<string, int>
@@ -78,6 +139,7 @@ public class GradingController : Controller
 
         if (!actionMap.TryGetValue(action, out var delta))
         {
+            if (isAjax) return Json(new { success = false, message = "إجراء الدرجات غير صالح." });
             TempData["ErrorMessage"] = "إجراء الدرجات غير صالح.";
             return RedirectToAction(nameof(Index));
         }
@@ -85,6 +147,7 @@ public class GradingController : Controller
         var student = await _db.Users.FirstOrDefaultAsync(u => u.Id == studentId && u.IsActive && !u.IsAdmin && !u.IsTeacher);
         if (student == null)
         {
+            if (isAjax) return Json(new { success = false, message = "المخدوم غير موجود أو غير نشط." });
             TempData["ErrorMessage"] = "المخدوم غير موجود أو غير نشط.";
             return RedirectToAction(nameof(Index));
         }
@@ -113,6 +176,7 @@ public class GradingController : Controller
             var existing = await _db.GradingTransactions.AnyAsync(x => x.IdempotencyKey == transaction.IdempotencyKey);
             if (existing)
             {
+                if (isAjax) return Json(new { success = false, message = "تم رفض التكرار نفسه للدرجات." });
                 TempData["WarningMessage"] = "تم رفض التكرار نفسه للدرجات.";
                 return RedirectToAction(nameof(Index));
             }
@@ -125,17 +189,24 @@ public class GradingController : Controller
                 Action = "GradingApplied",
                 TargetType = "Student",
                 TargetId = student.Id,
-                Details = transaction.Reason,
+                Details = $"{student.FullName}: {transaction.Reason}",
                 CreatedAt = DateTime.UtcNow
             });
 
             await _db.SaveChangesAsync();
             await tx.CommitAsync();
+
+            if (isAjax)
+            {
+                return Json(new { success = true, newBalance = student.GradingBalance, message = $"تم تطبيق {transaction.Reason} بنجاح." });
+            }
+
             TempData["SuccessMessage"] = $"تم تطبيق {transaction.Reason} بنجاح.";
         }
         catch
         {
             await tx.RollbackAsync();
+            if (isAjax) return Json(new { success = false, message = "فشل تطبيق العملية. حاول مرة أخرى." });
             TempData["ErrorMessage"] = "فشل تطبيق العملية. حاول مرة أخرى.";
         }
 

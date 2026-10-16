@@ -1,36 +1,244 @@
 @model MyMvcApp10.Models.ApplicationUser
 @{
-    ViewData["Title"] = "ملفي الشخصي";
+    bool isSelf = ViewBag.IsSelf == true;
+    var currentUser = ViewBag.CurrentUser as MyMvcApp10.Models.ApplicationUser;
+    string pageTitle = isSelf ? "ملفي الشخصي" : $"الملف الشخصي: {Model.FullName}";
+    ViewData["Title"] = pageTitle;
+    var transactions = ViewBag.Transactions as List<MyMvcApp10.Models.GradingTransaction> ?? new();
+    var attendance = ViewBag.Attendance as List<MyMvcApp10.Models.AttendanceRecord> ?? new();
+    int totalAttendance = ViewBag.TotalAttendanceCount is int count ? count : 0;
+    string roleLabel = Model.IsAdmin ? "مشرف" : (Model.IsTeacher ? "خادم" : "مخدوم");
+    string roleBadgeClass = Model.IsAdmin ? "bg-dark" : (Model.IsTeacher ? "bg-primary" : "bg-info text-dark");
 }
 
-<div class="p-3">
-    <h2>ملفي الشخصي</h2>
-    <div class="row g-3">
-        <div class="col-md-4">
-            <div class="border rounded p-3 h-100">
-                <div class="text-muted">الاسم</div>
-                <div class="fw-bold fs-5">@Model.FullName</div>
-                <div class="text-muted mt-2">الفصل: @(Model.SchoolClass?.Name ?? Model.ClassName ?? "—")</div>
-                <div class="text-muted">المرحلة: @(Model.SchoolLevel?.Name ?? Model.Level ?? "—")</div>
-                <div class="text-muted">الرصيد: <span class="badge-score @(Model.GradingBalance >= 0 ? "positive" : "negative")">@Model.GradingBalance</span></div>
+<div class="container-fluid px-0">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h2 class="mb-1">
+                @if (isSelf)
+                {
+                    <span>👤 ملفي الشخصي</span>
+                }
+                else
+                {
+                    <span>الملف الشخصي: @Model.FullName</span>
+                }
+            </h2>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge @roleBadgeClass">@roleLabel</span>
+                <span class="badge @(Model.IsActive ? "bg-success" : "bg-danger")">@(Model.IsActive ? "نشط" : "متوقف")</span>
+                <span class="text-muted small">اسم المستخدم: @Model.UserName</span>
             </div>
         </div>
-        <div class="col-md-8">
-            <div class="border rounded p-3 h-100">
-                <h5>معلومات التواصل</h5>
-                <p class="mb-1">الموبايل: @(string.IsNullOrWhiteSpace(Model.Mobile) ? "غير متاح" : Model.Mobile)</p>
-                <p class="mb-0">العنوان: @(string.IsNullOrWhiteSpace(Model.Address) ? "غير متاح" : Model.Address)</p>
-            </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+            @if (currentUser?.IsAdmin == true)
+            {
+                <a asp-controller="Admin" asp-action="EditUser" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm">تعديل الحساب</a>
+                <a asp-controller="Admin" asp-action="ResetPassword" asp-route-id="@Model.Id" class="btn btn-outline-warning btn-sm">تغيير كلمة المرور</a>
+            }
+            @if (!Model.IsTeacher && !Model.IsAdmin && (currentUser?.IsAdmin == true || currentUser?.IsTeacher == true))
+            {
+                <a asp-controller="Grading" asp-action="Index" asp-route-searchTerm="@Model.FullName" class="btn btn-outline-success btn-sm">تسجيل درجات</a>
+            }
+            @if (!isSelf)
+            {
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="history.back()">رجوع</button>
+            }
         </div>
-        @if (!Model.IsAdmin && !Model.IsTeacher)
-        {
-            <div class="col-12">
-                <div class="border rounded p-3 d-flex flex-column align-items-center text-center">
-                    <h5>كود تسجيل الحضور</h5>
-                    <img src="@Url.Action("Me", "QrCode")" alt="كود QR الخاص بتسجيل الحضور" width="240" height="240" class="img-fluid" />
-                    <span class="small text-muted">ورّي الكود للخادم وقت تسجيل الحضور.</span>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main details card -->
+        <div class="col-lg-4 col-md-5">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">البيانات الأساسية</h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">الاسم بالكامل</span>
+                            <span class="fw-bold">@Model.FullName</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">الصفة / الدور</span>
+                            <span class="badge @roleBadgeClass">@roleLabel</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">الفصل</span>
+                            <span class="fw-semibold">@(Model.SchoolClass?.Name ?? Model.ClassName ?? "—")</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">المرحلة</span>
+                            <span class="fw-semibold">@(Model.SchoolLevel?.Name ?? Model.Level ?? "—")</span>
+                        </li>
+                        @if (!Model.IsTeacher && !Model.IsAdmin)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="text-muted">رصيد الدرجات</span>
+                                <span class="badge-score @(Model.GradingBalance >= 0 ? "positive" : "negative") fs-6">@Model.GradingBalance</span>
+                            </li>
+                        }
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">عدد مرات الحضور</span>
+                            <span class="fw-bold">@totalAttendance</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">تاريخ التسجيل</span>
+                            <span>@Model.CreatedAt.ToString("dd/MM/yyyy")</span>
+                        </li>
+                        @if (Model.LastLoginAt.HasValue)
+                        {
+                            <li class="list-group-item d-flex justify-content-between px-0">
+                                <span class="text-muted">آخر تسجيل دخول</span>
+                                <span>@Model.LastLoginAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                            </li>
+                        }
+                    </ul>
                 </div>
             </div>
-        }
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">بيانات التواصل</h5>
+                    <p class="mb-2">
+                        <strong class="text-muted d-block small">رقم الموبايل:</strong>
+                        <span>@(string.IsNullOrWhiteSpace(Model.Mobile) ? "غير مسجل" : Model.Mobile)</span>
+                    </p>
+                    <p class="mb-2">
+                        <strong class="text-muted d-block small">البريد الإلكتروني:</strong>
+                        <span>@(string.IsNullOrWhiteSpace(Model.Email) ? "غير مسجل" : Model.Email)</span>
+                    </p>
+                    <p class="mb-2">
+                        <strong class="text-muted d-block small">العنوان:</strong>
+                        <span>@(string.IsNullOrWhiteSpace(Model.Address) ? "غير مسجل" : Model.Address)</span>
+                    </p>
+                    @if (!string.IsNullOrWhiteSpace(Model.Notes) && (currentUser?.IsAdmin == true || currentUser?.IsTeacher == true))
+                    {
+                        <p class="mb-0">
+                            <strong class="text-muted d-block small">ملاحظات:</strong>
+                            <span>@Model.Notes</span>
+                        </p>
+                    }
+                </div>
+            </div>
+
+            <!-- QR Code Card for Students and Teachers -->
+            <div class="card shadow-sm text-center">
+                <div class="card-body d-flex flex-column align-items-center">
+                    <h5 class="card-title">كود تسجيل الحضور (QR)</h5>
+                    <div class="p-2 border rounded bg-white my-2 d-inline-block">
+                        <img src="@Url.Action("ByUser", "QrCode", new { id = Model.Id })" alt="كود QR" width="220" height="220" class="img-fluid" />
+                    </div>
+                    <p class="text-muted small mb-2">
+                        @if (Model.IsTeacher)
+                        {
+                            <span>كود الخادم لتسجيل الحضور. امسحه أو ورّيه عند الحضور.</span>
+                        }
+                        else
+                        {
+                            <span>كود المخدوم لتسجيل الحضور. ورّي الكود للخادم وقت الحضور.</span>
+                        }
+                    </p>
+                    <a href="@Url.Action("ByUser", "QrCode", new { id = Model.Id })" target="_blank" download="qr-@(Model.UserName).png" class="btn btn-outline-secondary btn-sm">
+                        تحميل صورة الـ QR
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- History & Activity Column -->
+        <div class="col-lg-8 col-md-7">
+            @if (!Model.IsTeacher && !Model.IsAdmin)
+            {
+                <!-- Grading Transactions (Students only) -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0">آخر حركات الدرجات</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0 align-middle">
+                            <thead>
+                                <tr>
+                                    <th>النقاط</th>
+                                    <th>السبب</th>
+                                    <th>المصدر</th>
+                                    <th>التاريخ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (transactions.Any())
+                                {
+                                    @foreach (var tx in transactions)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="badge-score @(tx.PointsDelta >= 0 ? "positive" : "negative")">
+                                                    @(tx.PointsDelta > 0 ? $"+{tx.PointsDelta}" : tx.PointsDelta.ToString())
+                                                </span>
+                                            </td>
+                                            <td>@tx.Reason</td>
+                                            <td><span class="badge bg-light text-dark">@tx.SourceType</span></td>
+                                            <td>@tx.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-3">لا توجد حركات درجات مسجلة حتى الآن.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+
+            <!-- Attendance History (Students and Teachers) -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">سجل الحضور الأخير (@attendance.Count من @totalAttendance)</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>تاريخ ووقت الحضور</th>
+                                <th>طريقة التسجيل</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (attendance.Any())
+                            {
+                                @foreach (var att in attendance)
+                                {
+                                    <tr>
+                                        <td>@att.AttendanceTimeUtc.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>
+                                            @if (att.RegistrationMethod == "Qr")
+                                            {
+                                                <span class="badge bg-primary">مسح كود QR</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">@(att.RegistrationMethod ?? "يدوي")</span>
+                                            }
+                                        </td>
+                                        <td><span class="badge bg-success">حاضر</span></td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-3">لا يوجد سجلات حضور حتى الآن.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>

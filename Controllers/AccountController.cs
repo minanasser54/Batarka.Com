@@ -81,6 +81,14 @@ public class AccountController : Controller
         return RedirectToAction(nameof(Login));
     }
 
+    [HttpGet]
+    [Authorize]
+    public IActionResult Profile()
+    {
+        return RedirectToAction("Profile", "Student");
+    }
+
+
     private IActionResult RedirectToLocal(string? returnUrl)
     {
         if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))

@@ -81,9 +81,11 @@
                         <td>@item.TotalAttendance</td>
                         <td>@(item.IsActive ? "نشط" : "متوقف")</td>
                         <td>@item.CreatedAt.ToString("dd/MM/yyyy")</td>
-                        <td class="d-flex gap-2">
+                        <td class="d-flex gap-1 flex-wrap">
+                            <a asp-controller="QrCode" asp-action="ByUser" asp-route-id="@item.UserId" target="_blank" rel="noreferrer" class="btn btn-sm btn-outline-secondary">عرض QR</a>
+                            <a asp-controller="Student" asp-action="Profile" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-info">الملف الشخصي</a>
                             <a asp-action="EditUser" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-primary">تعديل</a>
-                            <a asp-action="ResetPassword" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-warning">تغيير كلمة المرور</a>
+                            <a asp-action="ResetPassword" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-warning">كلمة المرور</a>
                             @if (item.SchoolLevelId.HasValue)
                             {
                                 <a asp-controller="SchoolStructure" asp-action="LevelStudents" asp-route-id="@item.SchoolLevelId" class="btn btn-sm btn-outline-secondary">طلاب المرحلة</a>

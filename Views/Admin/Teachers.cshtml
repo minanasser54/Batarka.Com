@@ -31,9 +31,11 @@
                             <td>@(item.IsActive ? "نشط" : "متوقف")</td>
                             <td>@item.CreatedAt.ToString("dd/MM/yyyy")</td>
                             <td>@(item.LastLoginAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
-                            <td class="d-flex gap-2">
+                            <td class="d-flex gap-1 flex-wrap">
+                                <a asp-controller="QrCode" asp-action="ByUser" asp-route-id="@item.Id" target="_blank" rel="noreferrer" class="btn btn-sm btn-outline-secondary">عرض QR</a>
+                                <a asp-controller="Student" asp-action="Profile" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">الملف الشخصي</a>
                                 <a asp-action="EditUser" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">تعديل</a>
-                                <a asp-action="ResetPassword" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">تغيير كلمة المرور</a>
+                                <a asp-action="ResetPassword" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">كلمة المرور</a>
                             </td>
                         </tr>
                     }

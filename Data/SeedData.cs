@@ -87,7 +87,7 @@ public static class SeedData
             {
                 UserName = "teacher1",
                 Email = "teacher1@church.local",
-                FullName = "الخادم أحمد",
+                FullName = "الخادم مايكل",
                 IsTeacher = true,
                 IsActive = true,
                 ClassName = "المرحلة الثانوية",
@@ -105,7 +105,7 @@ public static class SeedData
             {
                 UserName = "student1",
                 Email = "student1@church.local",
-                FullName = "المخدوم محمد",
+                FullName = "المخدوم مينا",
                 IsTeacher = false,
                 IsAdmin = false,
                 IsActive = true,

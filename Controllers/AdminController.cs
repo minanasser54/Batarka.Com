@@ -649,30 +649,105 @@ public class AdminController : Controller
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim();
+            var matchingUserIds = await _db.Users
+                .Where(u => u.FullName.Contains(term) || (u.UserName != null && u.UserName.Contains(term)))
+                .Select(u => u.Id)
+                .ToListAsync();
+
             query = query.Where(x =>
                 (x.Actor != null && ((x.Actor.FullName != null && x.Actor.FullName.Contains(term)) || (x.Actor.UserName != null && x.Actor.UserName.Contains(term)))) ||
                 (x.TargetType != null && x.TargetType.Contains(term)) ||
-                (x.TargetId != null && x.TargetId.Contains(term)) ||
+                (x.TargetId != null && (x.TargetId.Contains(term) || matchingUserIds.Contains(x.TargetId))) ||
                 (x.Details != null && x.Details.Contains(term)) ||
                 (x.Reason != null && x.Reason.Contains(term)));
         }
 
-        var logs = await query
+        var rawLogs = await query
             .OrderByDescending(x => x.CreatedAt)
             .Take(500)
-            .Select(x => new AdminAuditListItemViewModel
+            .ToListAsync();
+
+        var targetUserIds = rawLogs
+            .Where(x => !string.IsNullOrEmpty(x.TargetId) && (x.TargetType == "User" || x.TargetType == "Student" || x.TargetType == "Teacher"))
+            .Select(x => x.TargetId!)
+            .Distinct()
+            .ToList();
+
+        var targetUsers = await _db.Users
+            .Where(u => targetUserIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id);
+
+        var attendanceRecordIds = rawLogs
+            .Where(x => x.TargetType == "AttendanceRecord" && int.TryParse(x.TargetId, out _))
+            .Select(x => int.Parse(x.TargetId!))
+            .Distinct()
+            .ToList();
+
+        var attendanceUsers = await _db.AttendanceRecords
+            .Include(ar => ar.User)
+            .Where(x => attendanceRecordIds.Contains(x.Id) && x.User != null)
+            .ToDictionaryAsync(x => x.Id, x => x.User!);
+
+        var classIds = rawLogs
+            .Where(x => x.TargetType == "SchoolClass" && int.TryParse(x.TargetId, out _))
+            .Select(x => int.Parse(x.TargetId!))
+            .Distinct()
+            .ToList();
+        var classes = await _db.SchoolClasses.Where(c => classIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id);
+
+        var levelIds = rawLogs
+            .Where(x => x.TargetType == "SchoolLevel" && int.TryParse(x.TargetId, out _))
+            .Select(x => int.Parse(x.TargetId!))
+            .Distinct()
+            .ToList();
+        var levels = await _db.SchoolLevels.Where(l => levelIds.Contains(l.Id)).ToDictionaryAsync(l => l.Id);
+
+        var logs = rawLogs.Select(x =>
+        {
+            string? targetName = null;
+            string? targetUserName = null;
+            string? targetRole = null;
+
+            if (!string.IsNullOrEmpty(x.TargetId) && targetUsers.TryGetValue(x.TargetId, out var targetUser))
+            {
+                targetName = targetUser.FullName;
+                targetUserName = targetUser.UserName;
+                targetRole = targetUser.IsAdmin ? "مشرف" : (targetUser.IsTeacher ? "خادم" : "مخدوم");
+            }
+            else if (x.TargetType == "AttendanceRecord" && int.TryParse(x.TargetId, out var attId) && attendanceUsers.TryGetValue(attId, out var attUser))
+            {
+                targetName = attUser.FullName;
+                targetUserName = attUser.UserName;
+                targetRole = attUser.IsAdmin ? "مشرف" : (attUser.IsTeacher ? "خادم" : "مخدوم");
+            }
+            else if (x.TargetType == "SchoolClass" && int.TryParse(x.TargetId, out var cid) && classes.TryGetValue(cid, out var cls))
+            {
+                targetName = cls.Name;
+                targetRole = "فصل";
+            }
+            else if (x.TargetType == "SchoolLevel" && int.TryParse(x.TargetId, out var lid) && levels.TryGetValue(lid, out var lvl))
+            {
+                targetName = lvl.Name;
+                targetRole = "مرحلة";
+            }
+
+            return new AdminAuditListItemViewModel
             {
                 Id = x.Id,
                 Action = x.Action,
-                ActorName = x.Actor != null ? x.Actor.FullName : null,
-                ActorUserName = x.Actor != null ? x.Actor.UserName : null,
+                ActorName = x.Actor != null ? x.Actor.FullName : (x.ActorId == "System" ? "النظام" : x.ActorId),
+                ActorUserName = x.Actor?.UserName,
+                ActorRole = x.Actor == null ? "النظام" : (x.Actor.IsAdmin ? "مشرف" : (x.Actor.IsTeacher ? "خادم" : "مخدوم")),
                 TargetType = x.TargetType,
                 TargetId = x.TargetId,
+                TargetName = targetName,
+                TargetUserName = targetUserName,
+                TargetRole = targetRole,
                 Details = x.Details,
                 Reason = x.Reason,
                 CreatedAt = x.CreatedAt
-            })
-            .ToListAsync();
+            };
+        }).ToList();
 
         ViewBag.ActionName = actionName;
         ViewBag.Search = search;

@@ -1,39 +1,129 @@
 @model List<MyMvcApp10.Models.AdminStudentListItemViewModel>
 @{
-    ViewData["Title"] = "مخدومين الفصل";
+    ViewData["Title"] = $"فصل {ViewBag.ClassTitle}";
+    var teachers = ViewBag.ClassTeachers as List<MyMvcApp10.Models.AdminTeacherListItemViewModel> ?? new();
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
     <div>
-        <h2 class="mb-1">مخدومين @ViewBag.ClassTitle</h2>
-        <div class="text-muted">@ViewBag.LevelTitle</div>
+        <h2 class="mb-1">بيانات @ViewBag.ClassTitle</h2>
+        <div class="text-muted">المرحلة: <span class="fw-semibold">@ViewBag.LevelTitle</span></div>
     </div>
-    <a asp-action="ExportClassStudents" asp-route-id="@ViewBag.ClassId" class="btn btn-success">تنزيل CSV</a>
+    <div class="d-flex gap-2">
+        <a asp-action="ExportClassStudents" asp-route-id="@ViewBag.ClassId" class="btn btn-outline-success">تنزيل مخدومين CSV</a>
+        <a asp-action="Classes" asp-route-levelId="@(Model.FirstOrDefault()?.SchoolLevelId ?? teachers.FirstOrDefault()?.SchoolLevelId)" class="btn btn-outline-secondary">رجوع للفصول</a>
+    </div>
 </div>
 
-<div class="table-responsive">
-    <table class="table table-striped align-middle">
-        <thead><tr><th>الاسم</th><th>اسم المستخدم</th><th>الفصل</th><th>الرصيد</th><th>الحضور</th><th>الحالة</th><th>إجراءات</th></tr></thead>
-        <tbody>
-        @if (Model.Count == 0)
+<!-- Teachers of the Class Table (Requirement 5) -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h4 class="mb-0 text-primary">👨‍🏫 خدام الفصل (@teachers.Count)</h4>
+        @if (User.IsInRole("Admin"))
         {
-            <tr><td colspan="7" class="text-center text-muted">مفيش مخدومين مسجلين في الفصل ده.</td></tr>
+            <a asp-controller="Admin" asp-action="CreateUser" class="btn btn-sm btn-outline-primary">+ إضافة خادم</a>
         }
-        @foreach (var student in Model)
+    </div>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>الاسم</th>
+                    <th>اسم المستخدم</th>
+                    <th>الموبايل</th>
+                    <th>الدور</th>
+                    <th>الحالة</th>
+                    <th>آخر تسجيل دخول</th>
+                    <th>إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (teachers.Count == 0)
+                {
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-3">لا يوجد خدام مسجلين في هذا الفصل حاليًا.</td>
+                    </tr>
+                }
+                @foreach (var teacher in teachers)
+                {
+                    <tr>
+                        <td class="fw-bold">@teacher.FullName</td>
+                        <td>@teacher.UserName</td>
+                        <td>@(string.IsNullOrWhiteSpace(teacher.Mobile) ? "—" : teacher.Mobile)</td>
+                        <td>
+                            <span class="badge @(teacher.IsAdmin ? "bg-dark" : "bg-primary")">@(teacher.IsAdmin ? "مشرف" : "خادم")</span>
+                        </td>
+                        <td>
+                            <span class="badge @(teacher.IsActive ? "bg-success" : "bg-danger")">@(teacher.IsActive ? "نشط" : "متوقف")</span>
+                        </td>
+                        <td>@(teacher.LastLoginAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                        <td class="d-flex gap-1 flex-wrap">
+                            <a asp-controller="QrCode" asp-action="ByUser" asp-route-id="@teacher.Id" target="_blank" rel="noreferrer" class="btn btn-sm btn-outline-secondary">عرض QR</a>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <a asp-controller="Student" asp-action="Profile" asp-route-id="@teacher.Id" class="btn btn-sm btn-outline-info">الملف الشخصي</a>
+                                <a asp-controller="Admin" asp-action="EditUser" asp-route-id="@teacher.Id" class="btn btn-sm btn-outline-primary">تعديل</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Students of the Class Table -->
+<div class="card shadow-sm">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h4 class="mb-0 text-success">🎒 مخدومين الفصل (@Model.Count)</h4>
+        @if (User.IsInRole("Admin"))
         {
-            <tr>
-                <td>@student.FullName</td>
-                <td>@student.UserName</td>
-                <td>@(student.ClassName ?? "—")</td>
-                <td>@student.GradingBalance</td>
-                <td>@student.TotalAttendance</td>
-                <td>@(student.IsActive ? "نشط" : "متوقف")</td>
-                <td class="d-flex gap-2">
-                    <a asp-controller="QrCode" asp-action="ByUser" asp-route-id="@student.UserId" target="_blank" rel="noreferrer" class="btn btn-sm btn-outline-secondary">عرض QR</a>
-                    <a asp-controller="Admin" asp-action="EditUser" asp-route-id="@student.UserId" class="btn btn-sm btn-outline-primary">تعديل</a>
-                </td>
-            </tr>
+            <a asp-controller="Admin" asp-action="CreateUser" class="btn btn-sm btn-outline-success">+ إضافة مخدوم</a>
         }
-        </tbody>
-    </table>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>الاسم</th>
+                    <th>اسم المستخدم</th>
+                    <th>الرصيد</th>
+                    <th>الحضور</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-3">مفيش مخدومين مسجلين في الفصل ده.</td>
+                    </tr>
+                }
+                @foreach (var student in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">@student.FullName</td>
+                        <td>@student.UserName</td>
+                        <td>
+                            <span class="badge-score @(student.GradingBalance >= 0 ? "positive" : "negative")">@student.GradingBalance</span>
+                        </td>
+                        <td>@student.TotalAttendance</td>
+                        <td>
+                            <span class="badge @(student.IsActive ? "bg-success" : "bg-danger")">@(student.IsActive ? "نشط" : "متوقف")</span>
+                        </td>
+                        <td class="d-flex gap-1 flex-wrap">
+                            <a asp-controller="QrCode" asp-action="ByUser" asp-route-id="@student.UserId" target="_blank" rel="noreferrer" class="btn btn-sm btn-outline-secondary">عرض QR</a>
+                            <a asp-controller="Student" asp-action="Profile" asp-route-id="@student.UserId" class="btn btn-sm btn-outline-info">الملف الشخصي</a>
+                            <a asp-controller="Grading" asp-action="Index" asp-route-searchTerm="@student.FullName" class="btn btn-sm btn-outline-success">درجات</a>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <a asp-controller="Admin" asp-action="EditUser" asp-route-id="@student.UserId" class="btn btn-sm btn-outline-primary">تعديل</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>

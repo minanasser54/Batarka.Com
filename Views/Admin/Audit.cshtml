@@ -1,65 +1,166 @@
 @model List<MyMvcApp10.Models.AdminAuditListItemViewModel>
 @{
-    ViewData["Title"] = "سجل العمليات";
+    ViewData["Title"] = "سجل العمليات (Audit)";
 }
 
 <div>
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>سجل العمليات</h2>
-        <span class="text-muted">آخر @Model.Count عملية مطابقة</span>
+        <div>
+            <h2 class="mb-0">📋 سجل العمليات (Audit Log)</h2>
+            <div class="text-muted small">متابعة كافة الإجراءات والعمليات المنفذة ومن طبقها وعلى مين تم تطبيقها.</div>
+        </div>
+        <span class="badge bg-secondary fs-6">@Model.Count عملية مطابقة</span>
     </div>
-    <form method="get" class="row g-2 align-items-end mb-3">
-        <div class="col-md-3">
-            <label class="form-label" for="search">بحث</label>
-            <input id="search" name="search" value="@ViewBag.Search" class="form-control" placeholder="اسم، هدف، تفاصيل أو سبب" />
-        </div>
-        <div class="col-md-2">
-            <label class="form-label" for="actionName">نوع العملية</label>
-            <select id="actionName" name="actionName" class="form-select">
-                <option value="">كل العمليات</option>
-                @foreach (var actionName in ViewBag.ActionOptions)
-                {
-                    <option value="@actionName" selected="@(ViewBag.ActionName == actionName)">@actionName</option>
-                }
-            </select>
-        </div>
-        <div class="col-md-2"><label class="form-label" for="from">من تاريخ</label><input id="from" name="from" type="date" value="@ViewBag.From" class="form-control" /></div>
-        <div class="col-md-2"><label class="form-label" for="to">لحد تاريخ</label><input id="to" name="to" type="date" value="@ViewBag.To" class="form-control" /></div>
-        <div class="col-md-2"><button class="btn btn-primary w-100" type="submit">تصفية</button></div>
-        <div class="col-md-1"><a asp-action="Audit" class="btn btn-outline-secondary w-100">مسح</a></div>
-    </form>
-    <div class="table-responsive">
-        <table class="table table-striped align-middle">
-            <thead>
-                <tr>
-                    <th>الإجراء</th>
-                    <th>بواسطة</th>
-                    <th>الهدف</th>
-                    <th>التفاصيل</th>
-                    <th>السبب</th>
-                    <th>التاريخ والوقت</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (Model != null && Model.Any())
-                {
-                    @foreach (var item in Model)
+
+    <div class="card shadow-sm p-3 mb-4">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-bold" for="search">بحث بالاسم أو الهدف أو التفاصيل</label>
+                <input id="search" name="search" value="@ViewBag.Search" class="form-control" placeholder="اسم الخادم، المخدوم، الهدف..." />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold" for="actionName">نوع العملية</label>
+                <select id="actionName" name="actionName" class="form-select">
+                    <option value="">كل العمليات</option>
+                    @foreach (var actionName in ViewBag.ActionOptions)
+                    {
+                        <option value="@actionName" selected="@(ViewBag.ActionName == actionName)">@actionName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="from">من تاريخ</label>
+                <input id="from" name="from" type="date" value="@ViewBag.From" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="to">إلى تاريخ</label>
+                <input id="to" name="to" type="date" value="@ViewBag.To" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" type="submit">تصفية</button>
+            </div>
+            <div class="col-md-1">
+                <a asp-action="Audit" class="btn btn-outline-secondary w-100">مسح</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="min-width: 130px;">الإجراء</th>
+                        <th style="min-width: 170px;">بواسطة (المنفذ)</th>
+                        <th style="min-width: 190px;">على مين (الهدف)</th>
+                        <th>التفاصيل</th>
+                        <th>السبب</th>
+                        <th style="min-width: 140px;">التاريخ والوقت</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var item in Model)
+                        {
+                            string badgeClass = item.Action switch
+                            {
+                                "GradingApplied" => "bg-warning text-dark",
+                                "AttendanceRegistered" => "bg-success",
+                                "AttendancePointAwarded" => "bg-success",
+                                "UserCreated" => "bg-primary",
+                                "UserEdited" => "bg-info text-dark",
+                                "PasswordReset" => "bg-danger",
+                                "LoginSucceeded" => "bg-secondary",
+                                _ => "bg-dark"
+                            };
+
+                            string actionArabic = item.Action switch
+                            {
+                                "GradingApplied" => "⭐ رصد درجات",
+                                "AttendanceRegistered" => "✅ تسجيل حضور",
+                                "AttendancePointAwarded" => "🎯 نقطة حضور",
+                                "QuestionPointsAwarded" => "📝 نقاط أسئلة",
+                                "UserCreated" => "➕ إنشاء حساب",
+                                "UserEdited" => "✏️ تعديل حساب",
+                                "PasswordReset" => "🔑 تغيير كلمة مرور",
+                                "ToggleActive" => "🔄 تغيير حالة",
+                                "LoginSucceeded" => "🚪 تسجيل دخول",
+                                "SchoolClassCreated" => "🏫 إنشاء فصل",
+                                "SchoolClassDeleted" => "🗑️ حذف فصل",
+                                "SchoolLevelCreated" => "🏢 إنشاء مرحلة",
+                                "SchoolLevelDeleted" => "🗑️ حذف مرحلة",
+                                _ => item.Action
+                            };
+
+                            <tr>
+                                <td>
+                                    <span class="badge @badgeClass">@actionArabic</span>
+                                    <div class="small text-muted">@item.Action</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold">
+                                        @(item.ActorName ?? "النظام")
+                                        @if (!string.IsNullOrWhiteSpace(item.ActorRole))
+                                        {
+                                            <span class="badge @(item.ActorRole == "مشرف" ? "bg-dark" : (item.ActorRole == "خادم" ? "bg-primary" : "bg-info text-dark")) small ms-1">
+                                                @item.ActorRole
+                                            </span>
+                                        }
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(item.ActorUserName))
+                                    {
+                                        <div class="small text-muted">@item.ActorUserName</div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(item.TargetName))
+                                    {
+                                        <div class="fw-bold">
+                                            @if (!string.IsNullOrWhiteSpace(item.TargetId) && (item.TargetRole == "مخدوم" || item.TargetRole == "خادم" || item.TargetRole == "مشرف"))
+                                            {
+                                                <a asp-controller="Student" asp-action="Profile" asp-route-id="@item.TargetId" class="text-decoration-none">
+                                                    @item.TargetName
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span>@item.TargetName</span>
+                                            }
+
+                                            @if (!string.IsNullOrWhiteSpace(item.TargetRole))
+                                            {
+                                                <span class="badge @(item.TargetRole == "مشرف" ? "bg-dark" : (item.TargetRole == "خادم" ? "bg-primary" : (item.TargetRole == "مخدوم" ? "bg-info text-dark" : "bg-secondary"))) ms-1">
+                                                    @item.TargetRole
+                                                </span>
+                                            }
+                                        </div>
+                                        <div class="small text-muted">
+                                            @(item.TargetUserName ?? item.TargetType)
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div>@(item.TargetType ?? "—")</div>
+                                        <div class="small text-muted text-truncate" style="max-width: 140px;" title="@item.TargetId">
+                                            @(item.TargetId ?? "")
+                                        </div>
+                                    }
+                                </td>
+                                <td>@(item.Details ?? "—")</td>
+                                <td>@(item.Reason ?? "—")</td>
+                                <td class="small">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            </tr>
+                        }
+                    }
+                    else
                     {
                         <tr>
-                            <td>@item.Action</td>
-                            <td>@(item.ActorName ?? "—")<div class="small text-muted">@(item.ActorUserName ?? "")</div></td>
-                            <td>@(item.TargetType ?? "—")<div class="small text-muted">@(item.TargetId ?? "")</div></td>
-                            <td>@(item.Details ?? "—")</td>
-                            <td>@(item.Reason ?? "—")</td>
-                            <td>@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td colspan="6" class="text-center text-muted py-4">لا توجد عمليات مطابقة لخيارات التصفية.</td>
                         </tr>
                     }
-                }
-                else
-                {
-                    <tr><td colspan="6" class="text-center text-muted">لا توجد بيانات مطابقة.</td></tr>
-                }
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
