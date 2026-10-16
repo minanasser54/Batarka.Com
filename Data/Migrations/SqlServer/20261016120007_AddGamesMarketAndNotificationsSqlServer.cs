@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -79,13 +79,13 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                         column: x => x.TargetUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_AppNotifications_Teams_TargetTeamId",
                         column: x => x.TargetTeamId,
                         principalTable: "Teams",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateTable(
@@ -141,7 +141,7 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                         column: x => x.StudentId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_TeamMembers_Teams_TeamId",
                         column: x => x.TeamId,
@@ -174,7 +174,7 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateTable(
@@ -196,7 +196,7 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                         column: x => x.StudentId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_MagicCardPurchaseDeductions_MagicCards_CardId",
                         column: x => x.CardId,
@@ -225,7 +225,7 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_MarketCardComments_MagicCards_CardId",
                         column: x => x.CardId,
@@ -253,7 +253,7 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_MarketCardReactions_MagicCards_CardId",
                         column: x => x.CardId,

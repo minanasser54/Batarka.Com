@@ -853,7 +853,7 @@ public class GamesMarketController : Controller
                     u.FullName,
                     u.UserName,
                     ClassName = u.SchoolClass != null ? u.SchoolClass.Name : u.ClassName,
-                    IsSelectedInThisTeam = model.SelectedStudentIds.Contains(u.Id),
+                    IsSelectedInThisTeam = model.SelectedStudentIds != null && model.SelectedStudentIds.Contains(u.Id),
                     IsAssignedInOtherTeam = assignedInOtherTeams.Contains(u.Id)
                 })
                 .ToListAsync();
