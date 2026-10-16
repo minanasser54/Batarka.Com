@@ -20,7 +20,6 @@
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">الرئيسية</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Student" asp-action="Profile">ملفي الشخصي</a></li>
 
                             @if (User.IsInRole("Admin") || User.IsInRole("Teacher"))
                             {
@@ -30,12 +29,38 @@
 
                             @if (User.IsInRole("Admin"))
                             {
-                                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Index">لوحة التحكم</a></li>
-                                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Students">إدارة المخدومين</a></li>
-                                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Teachers">إدارة الخدام</a></li>
-                                <li class="nav-item"><a class="nav-link" asp-controller="SchoolStructure" asp-action="Levels">المراحل والفصول</a></li>
-                                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Questions">أسئلة الحضور والنقاط</a></li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" id="adminMenu">
+                                        لوحة التحكم
+                                    </a>
+                                    <ul class="dropdown-menu shadow">
+                                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Index">📊 الإحصائيات</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Students">📚 إدارة المخدومين</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Teachers">👨‍🏫 إدارة الخدام</a></li>
+                                        <li><a class="dropdown-item" asp-controller="SchoolStructure" asp-action="Levels">🏫 المراحل والفصول</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Questions">❓ أسئلة الحضور والنقاط</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" asp-controller="GamesMarket" asp-action="ManageCards">🃏 إدارة كروت السوق</a></li>
+                                        <li><a class="dropdown-item" asp-controller="GamesMarket" asp-action="ManageTeams">👥 إدارة الفرق</a></li>
+                                        <li><a class="dropdown-item" asp-controller="GamesMarket" asp-action="Categories">🏷️ أقسام السوق</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" asp-controller="Notifications" asp-action="Manage">🔔 مركز الإشعارات</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Notifications" asp-action="Create">📢 إرسال إشعار</a></li>
+                                    </ul>
+                                </li>
                             }
+
+                            <!-- Games Market (visible to all authenticated users) -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    🎮 سوق الألعاب
+                                </a>
+                                <ul class="dropdown-menu shadow">
+                                    <li><a class="dropdown-item" asp-controller="GamesMarket" asp-action="Index">🃏 تصفح الكروت</a></li>
+                                    <li><a class="dropdown-item" asp-controller="GamesMarket" asp-action="Teams">🏆 لوحة الفرق</a></li>
+                                    <li><a class="dropdown-item" asp-controller="GamesMarket" asp-action="MyTeam">👥 فريقنا</a></li>
+                                </ul>
+                            </li>
 
                             @if (User.IsInRole("Student"))
                             {
@@ -48,6 +73,16 @@
                     <ul class="navbar-nav ms-auto align-items-center">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
+                            <!-- Notification Bell -->
+                            <li class="nav-item me-2">
+                                <a class="nav-link position-relative text-white" asp-controller="Notifications" asp-action="Index" title="الإشعارات" id="notifBellLink">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-bell-fill" viewBox="0 0 16 16">
+                                        <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2m.995-14.901a1 1 0 1 0-1.99 0A5 5 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901"/>
+                                    </svg>
+                                    <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-danger" id="notifBadge" style="display:none; font-size: 10px;"></span>
+                                </a>
+                            </li>
+
                             <li class="nav-item me-2">
                                 <a class="nav-link text-white-50 text-decoration-none" asp-controller="Student" asp-action="Profile" title="عرض ملفي الشخصي">
                                     مرحبًا، <span class="text-white fw-bold">@User.Identity.Name</span>
@@ -97,6 +132,27 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <script>
+            (function fetchUnreadCount() {
+                fetch('/Notifications/UnreadCount')
+                    .then(r => r.ok ? r.json() : null)
+                    .then(data => {
+                        if (data && data.count > 0) {
+                            var badge = document.getElementById('notifBadge');
+                            if (badge) {
+                                badge.textContent = data.count > 99 ? '99+' : data.count;
+                                badge.style.display = 'inline-block';
+                            }
+                        }
+                    })
+                    .catch(() => {});
+            })();
+        </script>
+    }
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

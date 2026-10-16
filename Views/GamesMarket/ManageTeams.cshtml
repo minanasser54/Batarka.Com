@@ -1,0 +1,123 @@
+@model IEnumerable<MyMvcApp10.Models.Team>
+@{
+    ViewData["Title"] = "إدارة فرق سوق الألعاب";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">👥 إدارة وتعيين الفرق</h2>
+        <p class="text-muted mb-0">أنشئ الفرق وعيّن أعضاءها من المخدومين. الطالب الواحد يمكنه الانضمام لفريق واحد فقط.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="CreateTeam" class="btn btn-primary">➕ فريق جديد</a>
+        <a asp-action="ManageCards" class="btn btn-outline-secondary">🃏 إدارة الكروت</a>
+        <a asp-action="Teams" class="btn btn-outline-primary">🏆 لوحة المنافسة</a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white border-bottom py-3">
+        <h5 class="fw-bold mb-0 text-dark">الفرق المسجلة في النظام (@Model.Count())</h5>
+    </div>
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <div class="fs-1 mb-2">👥</div>
+                <h5>لا توجد فرق مسجلة</h5>
+                <p>أضف أول فريق وعيّن أعضاءه من المخدومين.</p>
+                <a asp-action="CreateTeam" class="btn btn-primary">➕ إنشاء أول فريق</a>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>اسم الفريق</th>
+                            <th class="text-center">عدد الأعضاء</th>
+                            <th class="text-center">رصيد الفريق</th>
+                            <th class="text-center">الكروت المملوكة</th>
+                            <th>الأعضاء</th>
+                            <th class="text-center">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var team in Model)
+                        {
+                            var totalBalance = team.Members.Sum(m => m.Student.GradingBalance);
+                            var boughtCount = team.BoughtCards.Count(c => c.IsSold);
+
+                            <tr>
+                                <td>@index</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #132c4a, #d4a73a); color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; overflow: hidden; flex-shrink: 0;">
+                                            @if (!string.IsNullOrWhiteSpace(team.LogoUrl))
+                                            {
+                                                <img src="@team.LogoUrl" alt="@team.Name" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.outerHTML='🛡️';" />
+                                            }
+                                            else
+                                            {
+                                                <span>🛡️</span>
+                                            }
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">@team.Name</div>
+                                            @if (!string.IsNullOrWhiteSpace(team.Description))
+                                            {
+                                                <small class="text-muted">@team.Description</small>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary">@team.Members.Count</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge @(totalBalance >= 0 ? "bg-success" : "bg-danger") fw-bold px-3">
+                                        @totalBalance.ToString("N0") نقطة
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-warning text-dark">@boughtCount كارت</span>
+                                </td>
+                                <td style="max-width: 280px;">
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @foreach (var m in team.Members)
+                                        {
+                                            <span class="badge bg-light text-dark border" style="font-size: 11px;">
+                                                @m.Student.FullName
+                                            </span>
+                                        }
+                                        @if (!team.Members.Any())
+                                        {
+                                            <span class="text-muted small">لا يوجد أعضاء</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <a asp-action="EditTeam" asp-route-id="@team.Id" class="btn btn-sm btn-outline-primary">
+                                            تعديل / تغيير الأعضاء
+                                        </a>
+                                        <form asp-action="DeleteTeam" asp-route-id="@team.Id" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف فريق [@team.Name]؟ سيتم حذف بيانات الأعضاء ولكن ليس الكروت المشتراة.');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

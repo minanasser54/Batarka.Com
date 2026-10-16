@@ -1,0 +1,68 @@
+@model MyMvcApp10.Models.MagicCardCreateEditViewModel
+@{
+    ViewData["Title"] = "إضافة كارت سحري جديد";
+    var categories = ViewBag.Categories as IEnumerable<MyMvcApp10.Models.MarketCategory> ?? Enumerable.Empty<MyMvcApp10.Models.MarketCategory>();
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h4 class="fw-bold mb-0 text-dark">➕ إضافة كارت سحري جديد لسوق الألعاب</h4>
+                <a asp-action="ManageCards" class="btn btn-sm btn-outline-secondary">عودة للكروت</a>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="CreateCard" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label asp-for="Title" class="form-label fw-bold"></label>
+                            <input asp-for="Title" class="form-control" placeholder="مثال: كارت مضاعفة النقاط في التلي ماتش" required />
+                            <span asp-validation-for="Title" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="CategoryId" class="form-label fw-bold"></label>
+                            <select asp-for="CategoryId" class="form-select" required>
+                                <option value="">-- اختار القسم --</option>
+                                @foreach (var cat in categories)
+                                {
+                                    <option value="@cat.Id">@cat.Name</option>
+                                }
+                            </select>
+                            <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="Price" class="form-label fw-bold"></label>
+                            <div class="input-group">
+                                <input asp-for="Price" type="number" min="1" class="form-control" placeholder="100" required />
+                                <span class="input-group-text">نقطة</span>
+                            </div>
+                            <span asp-validation-for="Price" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label asp-for="ImageUrl" class="form-label fw-bold"></label>
+                            <input asp-for="ImageUrl" class="form-control" placeholder="https://example.com/card.png (رابط الصورة)" />
+                            <span asp-validation-for="ImageUrl" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="Description" class="form-label fw-bold"></label>
+                            <textarea asp-for="Description" class="form-control" rows="4" placeholder="اكتب وصف الكارت وقواعد استخدامه وصلاحياته في الألعاب..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4 fw-bold">💾 حفظ ونشر الكارت</button>
+                        <a asp-action="ManageCards" class="btn btn-outline-secondary">إلغاء</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

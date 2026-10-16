@@ -44,6 +44,7 @@ public class ApplicationUser : IdentityUser
     public DateTime? UpdatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
     public DateTime? DeletedAt { get; set; }
+    public bool MustChangePassword { get; set; } = false;
 
     public string? CreatedById { get; set; }
     public string? UpdatedById { get; set; }
@@ -295,7 +296,7 @@ public class RegisterViewModel
     public string UserName { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "كلمة المرور مطلوبة")]
-    [StringLength(100, MinimumLength = 6, ErrorMessage = "كلمة المرور لازم تكون 6 أحرف أو أكتر")]
+    [StringLength(100, MinimumLength = 4, ErrorMessage = "كلمة المرور لازم تكون 4 أحرف أو أكتر")]
     [DataType(DataType.Password)]
     [Display(Name = "كلمة المرور")]
     public string Password { get; set; } = string.Empty;
@@ -333,7 +334,7 @@ public class ResetPasswordViewModel
     public string FullName { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "كلمة المرور الجديدة مطلوبة")]
-    [StringLength(100, MinimumLength = 8, ErrorMessage = "كلمة المرور لازم تكون 8 أحرف على الأقل")]
+    [StringLength(100, MinimumLength = 4, ErrorMessage = "كلمة المرور لازم تكون 4 أحرف على الأقل")]
     [DataType(DataType.Password)]
     [Display(Name = "كلمة المرور الجديدة")]
     public string NewPassword { get; set; } = string.Empty;
@@ -504,4 +505,277 @@ public class GradingStudentDto
     public int GradingBalance { get; set; }
     public string? QrCodeValue { get; set; }
 }
+
+public class FirstLoginChangePasswordViewModel
+{
+    [Required(ErrorMessage = "كلمة المرور الجديدة مطلوبة")]
+    [StringLength(100, MinimumLength = 4, ErrorMessage = "كلمة المرور لازم تكون 4 أحرف على الأقل")]
+    [DataType(DataType.Password)]
+    [Display(Name = "كلمة المرور الجديدة")]
+    public string NewPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "أكد كلمة المرور الجديدة")]
+    [DataType(DataType.Password)]
+    [Compare(nameof(NewPassword), ErrorMessage = "كلمتا المرور غير متطابقتين")]
+    [Display(Name = "تأكيد كلمة المرور")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
+public class MarketCategory
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "اسم القسم مطلوب")]
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    public string? Description { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public virtual ICollection<MagicCard> Cards { get; set; } = new List<MagicCard>();
+}
+
+public class Team
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "اسم الفريق مطلوب")]
+    [MaxLength(150)]
+    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    public string? Description { get; set; }
+
+    [MaxLength(500)]
+    public string? LogoUrl { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public virtual ICollection<TeamMember> Members { get; set; } = new List<TeamMember>();
+    public virtual ICollection<MagicCard> BoughtCards { get; set; } = new List<MagicCard>();
+}
+
+public class TeamMember
+{
+    public int Id { get; set; }
+
+    public int TeamId { get; set; }
+    public Team Team { get; set; } = null!;
+
+    [Required]
+    public string StudentId { get; set; } = string.Empty;
+    public ApplicationUser Student { get; set; } = null!;
+
+    public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class MagicCard
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "عنوان الكارت مطلوب")]
+    [MaxLength(200)]
+    public string Title { get; set; } = string.Empty;
+
+    [MaxLength(2000)]
+    public string? Description { get; set; }
+
+    [Range(1, 100000, ErrorMessage = "السعر يجب أن يكون 1 نقطة على الأقل")]
+    public int Price { get; set; }
+
+    [MaxLength(1000)]
+    public string? ImageUrl { get; set; }
+
+    [Required(ErrorMessage = "اختار القسم")]
+    public int CategoryId { get; set; }
+    public MarketCategory Category { get; set; } = null!;
+
+    public bool IsSold { get; set; } = false;
+
+    public int? BoughtByTeamId { get; set; }
+    public Team? BoughtByTeam { get; set; }
+
+    public DateTime? BoughtAt { get; set; }
+
+    public bool IsUsed { get; set; } = false;
+    public DateTime? UsedAt { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public virtual ICollection<MagicCardPurchaseDeduction> PurchaseDeductions { get; set; } = new List<MagicCardPurchaseDeduction>();
+    public virtual ICollection<MarketCardReaction> Reactions { get; set; } = new List<MarketCardReaction>();
+    public virtual ICollection<MarketCardComment> Comments { get; set; } = new List<MarketCardComment>();
+}
+
+public class MagicCardPurchaseDeduction
+{
+    public int Id { get; set; }
+
+    public int CardId { get; set; }
+    public MagicCard Card { get; set; } = null!;
+
+    [Required]
+    public string StudentId { get; set; } = string.Empty;
+    public ApplicationUser Student { get; set; } = null!;
+
+    public int PointsDeducted { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class MarketCardReaction
+{
+    public int Id { get; set; }
+
+    public int CardId { get; set; }
+    public MagicCard Card { get; set; } = null!;
+
+    [Required]
+    public string UserId { get; set; } = string.Empty;
+    public ApplicationUser User { get; set; } = null!;
+
+    [Required]
+    [MaxLength(50)]
+    public string ReactionType { get; set; } = "like"; // like, love, fire, clap
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class MarketCardComment
+{
+    public int Id { get; set; }
+
+    public int CardId { get; set; }
+    public MagicCard Card { get; set; } = null!;
+
+    [Required]
+    public string UserId { get; set; } = string.Empty;
+    public ApplicationUser User { get; set; } = null!;
+
+    [Required]
+    [MaxLength(1000)]
+    public string Content { get; set; } = string.Empty;
+
+    public bool IsDeleted { get; set; } = false;
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class AppNotification
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "عنوان الإشعار مطلوب")]
+    [MaxLength(200)]
+    public string Title { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "نص الإشعار مطلوب")]
+    [MaxLength(2000)]
+    public string Message { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    public string? LinkUrl { get; set; }
+
+    [MaxLength(50)]
+    public string NotificationType { get; set; } = "General"; // General, Custom, Attendance, Grading, Market, Team
+
+    [MaxLength(50)]
+    public string TargetType { get; set; } = "All"; // All, Students, Teachers, Admins, SpecificUser, SpecificTeam
+
+    public string? TargetUserId { get; set; }
+    public ApplicationUser? TargetUser { get; set; }
+
+    public int? TargetTeamId { get; set; }
+    public Team? TargetTeam { get; set; }
+
+    public string? CreatedById { get; set; }
+    public ApplicationUser? CreatedBy { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public virtual ICollection<UserNotificationRead> Reads { get; set; } = new List<UserNotificationRead>();
+}
+
+public class UserNotificationRead
+{
+    public int Id { get; set; }
+
+    public int NotificationId { get; set; }
+    public AppNotification Notification { get; set; } = null!;
+
+    [Required]
+    public string UserId { get; set; } = string.Empty;
+    public ApplicationUser User { get; set; } = null!;
+
+    public DateTime ReadAt { get; set; } = DateTime.UtcNow;
+}
+
+public class TeamCreateEditViewModel
+{
+    public int? Id { get; set; }
+
+    [Required(ErrorMessage = "اسم الفريق مطلوب")]
+    [Display(Name = "اسم الفريق")]
+    public string Name { get; set; } = string.Empty;
+
+    [Display(Name = "وصف الفريق")]
+    public string? Description { get; set; }
+
+    [Display(Name = "رابط شعار / صورة الفريق")]
+    public string? LogoUrl { get; set; }
+
+    [Display(Name = "أعضاء الفريق (المخدومين)")]
+    public List<string> SelectedStudentIds { get; set; } = new();
+}
+
+public class MagicCardCreateEditViewModel
+{
+    public int? Id { get; set; }
+
+    [Required(ErrorMessage = "عنوان الكارت مطلوب")]
+    [Display(Name = "عنوان الكارت")]
+    public string Title { get; set; } = string.Empty;
+
+    [Display(Name = "وصف الكارت ومزاياه")]
+    public string? Description { get; set; }
+
+    [Required(ErrorMessage = "السعر مطلوب")]
+    [Range(1, 100000, ErrorMessage = "السعر يجب أن يكون 1 نقطة على الأقل")]
+    [Display(Name = "سعر الكارت بالنقاط")]
+    public int Price { get; set; }
+
+    [Display(Name = "رابط صورة الكارت")]
+    public string? ImageUrl { get; set; }
+
+    [Required(ErrorMessage = "اختار القسم")]
+    [Display(Name = "القسم")]
+    public int CategoryId { get; set; }
+}
+
+public class CreateCustomNotificationViewModel
+{
+    [Required(ErrorMessage = "عنوان الإشعار مطلوب")]
+    [Display(Name = "عنوان الإشعار")]
+    public string Title { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "نص الإشعار مطلوب")]
+    [Display(Name = "نص الإشعار")]
+    public string Message { get; set; } = string.Empty;
+
+    [Display(Name = "رابط التوجيه (اختياري)")]
+    public string? LinkUrl { get; set; }
+
+    [Required(ErrorMessage = "الفئة المستهدفة مطلوبة")]
+    [Display(Name = "المستهدفون")]
+    public string TargetType { get; set; } = "All"; // All, Students, Teachers, Admins, SpecificUser, SpecificTeam
+
+    [Display(Name = "مخدوم محدد")]
+    public string? TargetUserId { get; set; }
+
+    [Display(Name = "فريق محدد")]
+    public int? TargetTeamId { get; set; }
+}
+
 

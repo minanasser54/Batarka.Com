@@ -47,6 +47,7 @@ public class AccountController : Controller
         var result = await _signInManager.PasswordSignInAsync(user, model.Password, model.RememberMe, lockoutOnFailure: true);
         if (result.Succeeded)
         {
+            bool requiresPasswordChange = user.MustChangePassword || (!user.IsAdmin && user.LastLoginAt == null);
             user.LastLoginAt = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
             _db.AuditLogs.Add(new AuditLog
@@ -59,6 +60,12 @@ public class AccountController : Controller
                 CreatedAt = DateTime.UtcNow
             });
             await _db.SaveChangesAsync();
+
+            if (requiresPasswordChange)
+            {
+                return RedirectToAction(nameof(FirstLoginChangePassword));
+            }
+
             return RedirectToLocal(returnUrl);
         }
 
@@ -87,6 +94,67 @@ public class AccountController : Controller
     {
         return RedirectToAction("Profile", "Student");
     }
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> FirstLoginChangePassword()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return RedirectToAction(nameof(Login));
+
+        ViewBag.FullName = user.FullName;
+        ViewBag.IsFirstLogin = user.MustChangePassword || user.LastLoginAt == null;
+        return View(new FirstLoginChangePasswordViewModel());
+    }
+
+    [HttpPost]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> FirstLoginChangePassword(FirstLoginChangePasswordViewModel model)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return RedirectToAction(nameof(Login));
+
+        ViewBag.FullName = user.FullName;
+        ViewBag.IsFirstLogin = user.MustChangePassword || user.LastLoginAt == null;
+
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await _userManager.ResetPasswordAsync(user, resetToken, model.NewPassword);
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+            return View(model);
+        }
+
+        user.MustChangePassword = false;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userManager.UpdateAsync(user);
+        await _userManager.UpdateSecurityStampAsync(user);
+        await _signInManager.RefreshSignInAsync(user);
+
+        _db.AuditLogs.Add(new AuditLog
+        {
+            ActorId = user.Id,
+            Action = "PasswordResetOnFirstLogin",
+            TargetType = "User",
+            TargetId = user.Id,
+            Details = "تم تعيين كلمة المرور بنجاح.",
+            CreatedAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "تم تعيين كلمة المرور بنجاح، مرحبًا بك!";
+        return RedirectToAction("Index", "Home");
+    }
+
 
 
     private IActionResult RedirectToLocal(string? returnUrl)

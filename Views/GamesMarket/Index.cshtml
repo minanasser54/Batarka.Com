@@ -1,0 +1,311 @@
+@model IEnumerable<MyMvcApp10.Models.MagicCard>
+@{
+    ViewData["Title"] = "سوق الألعاب والمكافآت";
+    var categories = ViewBag.Categories as IEnumerable<MyMvcApp10.Models.MarketCategory> ?? Enumerable.Empty<MyMvcApp10.Models.MarketCategory>();
+    var userTeam = ViewBag.UserTeam as MyMvcApp10.Models.Team;
+    var teamBalance = (int)(ViewBag.TeamBalance ?? 0);
+    var currentUser = ViewBag.CurrentUser as MyMvcApp10.Models.ApplicationUser;
+    var currentCatId = ViewBag.CategoryId as int?;
+    var search = ViewBag.Search as string;
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">🎮 سوق الألعاب والمكافآت (Magic Cards)</h2>
+        <p class="text-muted mb-0">اشترِ كروت الألعاب السحرية لفريقك واجمع النقاط مع زملائك للمنافسة!</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Teams" class="btn btn-outline-primary">
+            🏆 لوحة الفرق
+        </a>
+        @if (userTeam != null)
+        {
+            <a asp-action="MyTeam" class="btn btn-primary">
+                👥 فريقنا (@userTeam.Name)
+            </a>
+        }
+        @if (User.IsInRole("Admin"))
+        {
+            <div class="dropdown">
+                <button class="btn btn-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    ⚙️ إدارة السوق
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                    <li><a class="dropdown-item" asp-action="ManageCards">🃏 إدارة الكروت</a></li>
+                    <li><a class="dropdown-item" asp-action="CreateCard">➕ إضافة كارت جديد</a></li>
+                    <li><a class="dropdown-item" asp-action="Categories">🏷️ إدارة الأقسام</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" asp-action="ManageTeams">👥 إدارة وتعيين الفرق</a></li>
+                </ul>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Team Banner -->
+@if (userTeam != null)
+{
+    <div class="card bg-primary text-white mb-4 shadow-sm">
+        <div class="card-body p-3 p-md-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="fs-1">🛡️</div>
+                <div>
+                    <h5 class="fw-bold mb-1">أنت عضو في فريق: @userTeam.Name</h5>
+                    <div class="small text-white-50">عدد أعضاء الفريق: @userTeam.Members.Count مخدومين</div>
+                </div>
+            </div>
+            <div class="text-md-end">
+                <div class="small text-white-50">رصيد الفريق الإجمالي</div>
+                <div class="fs-2 fw-bold text-warning">@teamBalance.ToString("N0") <span class="fs-6 text-white">نقطة</span></div>
+            </div>
+        </div>
+    </div>
+}
+else if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin") && !User.IsInRole("Teacher"))
+{
+    <div class="alert alert-info d-flex align-items-center gap-2 mb-4">
+        <span class="fs-4">ℹ️</span>
+        <div>
+            لست منضمًا لأي فريق بعد. يتم تعيين الفرق بواسطة المشرفين لتتمكن مع فريقك من شراء كروت الألعاب السحرية!
+        </div>
+    </div>
+}
+
+<!-- Filters & Search -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-body p-3">
+        <form method="get" asp-action="Index" class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white">🔍</span>
+                    <input type="text" name="search" value="@search" class="form-control" placeholder="ابحث باسم الكارت أو الوصف..." />
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select name="categoryId" class="form-select" onchange="this.form.submit()">
+                    <option value="">كل الأقسام</option>
+                    @foreach (var cat in categories)
+                    {
+                        if (currentCatId == cat.Id)
+                        {
+                            <option value="@cat.Id" selected>@cat.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@cat.Id">@cat.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-secondary w-100">تصفية</button>
+                @if (!string.IsNullOrWhiteSpace(search) || currentCatId.HasValue)
+                {
+                    <a asp-action="Index" class="btn btn-outline-secondary">إلغاء</a>
+                }
+            </div>
+        </form>
+
+        <!-- Category Quick Badges -->
+        <div class="d-flex flex-wrap gap-1 mt-3 pt-2 border-top">
+            <a asp-action="Index" class="btn btn-sm @(!currentCatId.HasValue ? "btn-dark" : "btn-outline-dark")">الكل</a>
+            @foreach (var cat in categories)
+            {
+                <a asp-action="Index" asp-route-categoryId="@cat.Id" class="btn btn-sm @(currentCatId == cat.Id ? "btn-dark" : "btn-outline-secondary")">
+                    @cat.Name
+                </a>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Cards Grid -->
+@if (!Model.Any())
+{
+    <div class="card text-center p-5 shadow-sm">
+        <div class="fs-1 mb-2">🃏</div>
+        <h4>لا توجد كروت متاحة حالياً</h4>
+        <p class="text-muted">لم يتم العثور على أي كروت تطابق معايير البحث.</p>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach (var card in Model)
+        {
+            var isAffordable = userTeam != null && teamBalance >= card.Price;
+            var likeCount = card.Reactions.Count(r => r.ReactionType == "like");
+            var loveCount = card.Reactions.Count(r => r.ReactionType == "love");
+            var fireCount = card.Reactions.Count(r => r.ReactionType == "fire");
+            var clapCount = card.Reactions.Count(r => r.ReactionType == "clap");
+
+            <div class="col">
+                <div class="card h-100 shadow-sm position-relative overflow-hidden border-0" style="transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                    <!-- Card Top Image / Placeholder -->
+                    <div style="height: 200px; background: linear-gradient(135deg, #1f2937, #374151); position: relative; overflow: hidden;" class="text-center">
+                        @if (!string.IsNullOrWhiteSpace(card.ImageUrl))
+                        {
+                            <img src="@card.ImageUrl" alt="@card.Title" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src=''; this.parentElement.innerHTML='<div class=\'h-100 d-flex align-items-center justify-content-center text-warning fs-1\'>🃏</div>';" />
+                        }
+                        else
+                        {
+                            <div class="h-100 d-flex align-items-center justify-content-center text-warning fs-1">
+                                🃏
+                            </div>
+                        }
+
+                        <span class="badge bg-secondary position-absolute top-0 end-0 m-2 px-3 py-2 fs-6 shadow">
+                            @card.Category.Name
+                        </span>
+
+                        @if (card.IsSold)
+                        {
+                            <div class="position-absolute bottom-0 start-0 w-100 bg-danger text-white py-1 fw-bold fs-6 shadow">
+                                🔒 مباع / Sold
+                            </div>
+                        }
+                    </div>
+
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title fw-bold text-dark mb-0">@card.Title</h5>
+                            <span class="badge bg-warning text-dark px-2 py-1 fs-6 fw-bold">
+                                💎 @card.Price نقطة
+                            </span>
+                        </div>
+
+                        <p class="card-text text-muted small flex-grow-1" style="min-height: 48px;">
+                            @(string.IsNullOrWhiteSpace(card.Description) ? "لا يوجد وصف إضافي." : card.Description)
+                        </p>
+
+                        <!-- Buy Button Action -->
+                        <div class="mt-3 pt-3 border-top">
+                            @if (card.IsSold)
+                            {
+                                <button class="btn btn-secondary w-100" disabled>
+                                    🔒 تم شراء هذا الكارت
+                                </button>
+                            }
+                            else if (userTeam != null)
+                            {
+                                if (isAffordable)
+                                {
+                                    <form asp-action="BuyCard" method="post" onsubmit="return confirm('هل أنت متأكد من شراء كارت [@card.Title] لفريقك [@userTeam.Name] بقيمة @card.Price نقطة؟ سيتم خصم النقاط بالتساوي من رصيد أعضاء الفريق.');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="cardId" value="@card.Id" />
+                                        <button type="submit" class="btn btn-success w-100 fw-bold">
+                                            ⚡ شراء للفريق (@card.Price نقطة)
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-outline-danger w-100" disabled title="رصيد الفريق الحالي @teamBalance نقطة وهو أقل من سعر الكارت">
+                                        ❌ رصيد الفريق غير كافٍ (@teamBalance / @card.Price)
+                                    </button>
+                                }
+                            }
+                            else
+                            {
+                                <button class="btn btn-outline-secondary w-100" disabled title="يجب أن تكون عضوًا في فريق للشراء">
+                                    🛡️ الشراء متاح لأعضاء الفرق فقط
+                                </button>
+                            }
+                        </div>
+
+                        <!-- Reactions Bar -->
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top small">
+                            <div class="d-flex gap-1">
+                                <form asp-action="AddReaction" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="cardId" value="@card.Id" />
+                                    <input type="hidden" name="reactionType" value="like" />
+                                    <button type="submit" class="btn btn-sm btn-outline-light text-dark border p-1 px-2" title="إعجاب">
+                                        👍 <span class="fw-bold">@likeCount</span>
+                                    </button>
+                                </form>
+                                <form asp-action="AddReaction" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="cardId" value="@card.Id" />
+                                    <input type="hidden" name="reactionType" value="love" />
+                                    <button type="submit" class="btn btn-sm btn-outline-light text-dark border p-1 px-2" title="حب">
+                                        ❤️ <span class="fw-bold">@loveCount</span>
+                                    </button>
+                                </form>
+                                <form asp-action="AddReaction" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="cardId" value="@card.Id" />
+                                    <input type="hidden" name="reactionType" value="fire" />
+                                    <button type="submit" class="btn btn-sm btn-outline-light text-dark border p-1 px-2" title="حماس">
+                                        🔥 <span class="fw-bold">@fireCount</span>
+                                    </button>
+                                </form>
+                                <form asp-action="AddReaction" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="cardId" value="@card.Id" />
+                                    <input type="hidden" name="reactionType" value="clap" />
+                                    <button type="submit" class="btn btn-sm btn-outline-light text-dark border p-1 px-2" title="تصفيق">
+                                        👏 <span class="fw-bold">@clapCount</span>
+                                    </button>
+                                </form>
+                            </div>
+
+                            <button class="btn btn-sm btn-link text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#comments-@card.Id">
+                                💬 التعليقات (@card.Comments.Count)
+                            </button>
+                        </div>
+
+                        <!-- Comments Section (Collapsible) -->
+                        <div class="collapse mt-2" id="comments-@card.Id">
+                            <div class="bg-light p-2 rounded-3 small">
+                                <div class="comments-list mb-2" style="max-height: 180px; overflow-y: auto;">
+                                    @if (!card.Comments.Any())
+                                    {
+                                        <div class="text-muted text-center py-2">لا توجد تعليقات بعد. كن أول من يعلق!</div>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var comment in card.Comments.OrderBy(c => c.CreatedAt))
+                                        {
+                                            <div class="border-bottom py-1 d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <span class="fw-bold text-primary">@comment.User.FullName:</span>
+                                                    <span>@comment.Content</span>
+                                                </div>
+                                                @if (currentUser != null && (currentUser.Id == comment.UserId || currentUser.IsAdmin))
+                                                {
+                                                    <form asp-action="DeleteComment" method="post" class="d-inline ms-1">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="commentId" value="@comment.Id" />
+                                                        <button type="submit" class="btn btn-link text-danger p-0 border-0" style="font-size: 11px;" title="حذف التعليق" onclick="return confirm('حذف هذا التعليق؟');">✕</button>
+                                                    </form>
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                </div>
+
+                                @if (User.Identity?.IsAuthenticated == true)
+                                {
+                                    <form asp-action="AddComment" method="post" class="d-flex gap-1">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="cardId" value="@card.Id" />
+                                        <input type="text" name="content" class="form-control form-control-sm" placeholder="أضف تعليقك..." required maxlength="500" />
+                                        <button type="submit" class="btn btn-sm btn-primary">إرسال</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <div class="text-center py-1">
+                                        <a asp-controller="Account" asp-action="Login" class="small">سجل دخول للتعليق</a>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

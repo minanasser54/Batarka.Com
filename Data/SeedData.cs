@@ -120,6 +120,7 @@ public static class SeedData
         }
 
         await EnsureSchoolAssignmentsAsync(context);
+        await EnsureGamesMarketSeedAsync(context);
     }
 
     private static async Task EnsureRoleAsync(RoleManager<IdentityRole> roleManager, string roleName)
@@ -175,5 +176,58 @@ public static class SeedData
             }
         }
         await context.SaveChangesAsync();
+    }
+
+    private static async Task EnsureGamesMarketSeedAsync(ApplicationDbContext context)
+    {
+        if (!await context.MarketCategories.AnyAsync())
+        {
+            var psCategory = new MarketCategory { Name = "بلايستيشن / PS", Description = "كروت خاصة بألعاب البلايستيشن والبطولات الإلكترونية" };
+            var teleCategory = new MarketCategory { Name = "تيليماتش / Telematch", Description = "كروت ألعاب التيليماتش والمسابقات الجماعية" };
+            var footCategory = new MarketCategory { Name = "كرة قدم / Football", Description = "كروت مباريات كرة القدم والجوائز الرياضية" };
+            var activityCategory = new MarketCategory { Name = "أنشطة وترفيه", Description = "كروت أنشطة ترفيهية ومفاجآت خاصة" };
+
+            context.MarketCategories.AddRange(psCategory, teleCategory, footCategory, activityCategory);
+            await context.SaveChangesAsync();
+
+            if (!await context.MagicCards.AnyAsync())
+            {
+                context.MagicCards.AddRange(
+                    new MagicCard
+                    {
+                        Title = "بطولة فيفا VIP (PS5)",
+                        Description = "تتيح للفريق حجز ساعة كاملة على البلايستيشن مع ميزة اختيار الفرق أولاً في البطولة.",
+                        Price = 25,
+                        CategoryId = psCategory.Id,
+                        ImageUrl = "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=600&auto=format&fit=crop&q=80"
+                    },
+                    new MagicCard
+                    {
+                        Title = "درع الحصانة في التيليماتش",
+                        Description = "كارت سحري يمنح الفريق فرصة إعادة لعبة واحدة في مسابقة التيليماتش الكبرى.",
+                        Price = 30,
+                        CategoryId = teleCategory.Id,
+                        ImageUrl = "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600&auto=format&fit=crop&q=80"
+                    },
+                    new MagicCard
+                    {
+                        Title = "ركلة جزاء إضافية (كرة قدم)",
+                        Description = "يمنح الفريق ركلة جزاء حاسمة أو وقت إضافي في دوري كرة القدم الأسبوعي.",
+                        Price = 20,
+                        CategoryId = footCategory.Id,
+                        ImageUrl = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=600&auto=format&fit=crop&q=80"
+                    },
+                    new MagicCard
+                    {
+                        Title = "وجبة سناك جماعية للفريق",
+                        Description = "وجبة سناك ومشروبات لجميع أعضاء الفريق بعد يوم الأنشطة المتميز.",
+                        Price = 40,
+                        CategoryId = activityCategory.Id,
+                        ImageUrl = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&auto=format&fit=crop&q=80"
+                    }
+                );
+                await context.SaveChangesAsync();
+            }
+        }
     }
 }

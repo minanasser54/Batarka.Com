@@ -1,0 +1,97 @@
+@model MyMvcApp10.Models.TeamCreateEditViewModel
+@{
+    ViewData["Title"] = "تعديل بيانات الفريق وأعضائه";
+    var students = ViewBag.AvailableStudents as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var selectedIds = Model.SelectedStudentIds ?? new List<string>();
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h4 class="fw-bold mb-0 text-dark">✏️ تعديل فريق: @Model.Name</h4>
+                <a asp-action="ManageTeams" class="btn btn-sm btn-outline-secondary">عودة للفرق</a>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="EditTeam" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="Name" class="form-label fw-bold"></label>
+                            <input asp-for="Name" class="form-control" required />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="LogoUrl" class="form-label fw-bold"></label>
+                            <input asp-for="LogoUrl" class="form-control" placeholder="https://example.com/logo.png (اختياري)" />
+                            <span asp-validation-for="LogoUrl" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Description" class="form-label fw-bold"></label>
+                            <input asp-for="Description" class="form-control" placeholder="وصف مختصر للفريق (اختياري)" />
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Members Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">👤 اختيار أعضاء الفريق من المخدومين</label>
+                        <p class="text-muted small mb-3">
+                            الأعضاء المحددون حاليًا هم في هذا الفريق. 
+                            <span class="badge bg-warning text-dark">مُعيَّن في فريق آخر</span> يعني لا يمكن نقله لهذا الفريق مباشرةً.
+                        </p>
+
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-2">
+                            @foreach (var student in students)
+                            {
+                                bool isSelectedHere = (bool)student.IsSelectedInThisTeam;
+                                bool isInOtherTeam = (bool)student.IsAssignedInOtherTeam;
+                                bool isDisabled = isInOtherTeam;
+
+                                <div class="col">
+                                    <div class="border rounded-2 p-2 d-flex align-items-center gap-2 @(isDisabled ? "bg-light opacity-75" : (isSelectedHere ? "border-primary" : "bg-white"))"
+                                         style="@(isDisabled ? "cursor: not-allowed;" : "")">
+                                        <input type="checkbox"
+                                               name="SelectedStudentIds"
+                                               value="@student.Id"
+                                               class="form-check-input m-0"
+                                               id="stu_@student.Id"
+                                               @(isSelectedHere ? "checked" : "")
+                                               @(isDisabled ? "disabled" : "")
+                                               style="min-width: 18px; min-height: 18px;" />
+                                        <label for="stu_@student.Id" class="d-flex flex-column flex-grow-1" style="cursor: @(isDisabled ? "not-allowed" : "pointer");">
+                                            <span class="fw-bold small text-dark">@student.FullName</span>
+                                            <span class="text-muted" style="font-size: 11px;">
+                                                @student.UserName
+                                                @if (!string.IsNullOrWhiteSpace((string?)student.ClassName))
+                                                {
+                                                    <span> | @student.ClassName</span>
+                                                }
+                                                @if (isSelectedHere)
+                                                {
+                                                    <span class="badge bg-primary ms-1">عضو حالي</span>
+                                                }
+                                                else if (isInOtherTeam)
+                                                {
+                                                    <span class="badge bg-warning text-dark ms-1">مُعيَّن في فريق آخر</span>
+                                                }
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-top d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4 fw-bold">💾 حفظ التعديلات</button>
+                        <a asp-action="ManageTeams" class="btn btn-outline-secondary">إلغاء</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

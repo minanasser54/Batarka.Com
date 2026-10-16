@@ -14,11 +14,13 @@ public class AttendanceController : Controller
 {
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly MyMvcApp10.Services.INotificationService _notificationService;
 
-    public AttendanceController(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+    public AttendanceController(ApplicationDbContext db, UserManager<ApplicationUser> userManager, MyMvcApp10.Services.INotificationService notificationService)
     {
         _db = db;
         _userManager = userManager;
+        _notificationService = notificationService;
     }
 
     public async Task<IActionResult> Index(string? date)
@@ -483,6 +485,14 @@ public class AttendanceController : Controller
             CreatedAt = DateTime.UtcNow
         });
         await _db.SaveChangesAsync();
+
+        await _notificationService.SendToUserAsync(
+            user.Id,
+            "✅ تسجيل حضور",
+            $"تم تسجيل حضورك بنجاح بتاريخ {record.AttendanceTimeUtc:dd/MM/yyyy} بواسطة {current.FullName}.",
+            "Attendance",
+            Url.Action("Profile", "Student")
+        );
     }
 
     private async Task CreateTransactionAsync(string studentId, string teacherId, int pointsDelta, string reason, string sourceType, int attendanceId, string idempotencyKey)

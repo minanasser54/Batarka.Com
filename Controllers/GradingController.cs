@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyMvcApp10.Data;
 using MyMvcApp10.Models;
+using MyMvcApp10.Services;
 
 namespace MyMvcApp10.Controllers;
 
@@ -12,11 +13,13 @@ public class GradingController : Controller
 {
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly INotificationService _notificationService;
 
-    public GradingController(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+    public GradingController(ApplicationDbContext db, UserManager<ApplicationUser> userManager, INotificationService notificationService)
     {
         _db = db;
         _userManager = userManager;
+        _notificationService = notificationService;
     }
 
     public async Task<IActionResult> Index(string? searchTerm, int? schoolLevelId, int? schoolClassId, string? qrCode)
@@ -62,6 +65,7 @@ public class GradingController : Controller
         ViewBag.QrCode = qrCode;
         ViewBag.SelectedLevelId = schoolLevelId;
         ViewBag.SelectedClassId = schoolClassId;
+        ViewBag.IsAdmin = current.IsAdmin;
         ViewBag.Levels = await _db.SchoolLevels.OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToListAsync();
         ViewBag.Classes = await _db.SchoolClasses.Include(x => x.SchoolLevel).OrderBy(x => x.SchoolLevel.SortOrder).ThenBy(x => x.Name).ToListAsync();
         return View(students);
@@ -196,6 +200,20 @@ public class GradingController : Controller
             await _db.SaveChangesAsync();
             await tx.CommitAsync();
 
+            try
+            {
+                await _notificationService.SendToUserAsync(
+                    student.Id,
+                    "تحديث الدرجات",
+                    $"تم تسجيل {transaction.Reason} في رصيدك. رصيدك الحالي: {student.GradingBalance} نقطة.",
+                    "GradeChange",
+                    "/Grading");
+            }
+            catch
+            {
+                // Non-blocking notification failure
+            }
+
             if (isAjax)
             {
                 return Json(new { success = true, newBalance = student.GradingBalance, message = $"تم تطبيق {transaction.Reason} بنجاح." });
@@ -210,6 +228,85 @@ public class GradingController : Controller
             TempData["ErrorMessage"] = "فشل تطبيق العملية. حاول مرة أخرى.";
         }
 
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DirectAdjustGrade(string studentId, int newBalance, string? reason)
+    {
+        bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                      (Request.Headers.Accept.ToString()?.Contains("application/json") ?? false);
+
+        var current = await GetCurrentUserAsync();
+        if (current == null || !current.IsAdmin)
+        {
+            return isAjax ? Json(new { success = false, message = "تعديل الدرجات المباشر متاح للمشرفين فقط." }) : Forbid();
+        }
+
+        var student = await _db.Users.FirstOrDefaultAsync(u => u.Id == studentId && u.IsActive && !u.IsAdmin && !u.IsTeacher);
+        if (student == null)
+        {
+            return isAjax ? Json(new { success = false, message = "المخدوم غير موجود أو غير نشط." }) : NotFound();
+        }
+
+        int oldBalance = student.GradingBalance;
+        int delta = newBalance - oldBalance;
+
+        if (delta == 0)
+        {
+            return isAjax ? Json(new { success = true, newBalance = student.GradingBalance, message = "الرصيد لم يتغير." }) : RedirectToAction(nameof(Index));
+        }
+
+        var reasonText = string.IsNullOrWhiteSpace(reason)
+            ? $"تعديل مباشر من المشرف ({oldBalance} > {newBalance})"
+            : $"تعديل مباشر ({oldBalance} > {newBalance}): {reason.Trim()}";
+
+        var transaction = new GradingTransaction
+        {
+            StudentId = student.Id,
+            TeacherId = current.Id,
+            PointsDelta = delta,
+            Reason = reasonText,
+            SourceType = "AdminDirect",
+            IdempotencyKey = $"{student.Id}:{current.Id}:direct:{DateTime.UtcNow.Ticks}",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        student.GradingBalance = newBalance;
+        _db.GradingTransactions.Add(transaction);
+        _db.AuditLogs.Add(new AuditLog
+        {
+            ActorId = current.Id,
+            Action = "GradeDirectAdjusted",
+            TargetType = "Student",
+            TargetId = student.Id,
+            Details = $"تعديل مباشر لرصيد {student.FullName}: {oldBalance} > {newBalance}",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _db.SaveChangesAsync();
+
+        try
+        {
+            await _notificationService.SendToUserAsync(
+                student.Id,
+                "تعديل رصيد الدرجات",
+                $"قام المشرف بتعديل رصيدك إلى {newBalance} نقطة. (الرصيد السابق: {oldBalance}).",
+                "GradeChange",
+                "/Grading");
+        }
+        catch
+        {
+            // Non-blocking notification failure
+        }
+
+        if (isAjax)
+        {
+            return Json(new { success = true, newBalance = student.GradingBalance, message = $"تم تعديل رصيد {student.FullName} بنجاح إلى {newBalance}." });
+        }
+
+        TempData["SuccessMessage"] = $"تم تعديل رصيد {student.FullName} بنجاح إلى {newBalance}.";
         return RedirectToAction(nameof(Index));
     }
 

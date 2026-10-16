@@ -1,0 +1,96 @@
+@model IEnumerable<MyMvcApp10.Models.AppNotification>
+@{
+    ViewData["Title"] = "الإشعارات";
+    var readIds = ViewBag.ReadIds as List<int> ?? new List<int>();
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">🔔 صندوق الإشعارات</h2>
+        <p class="text-muted mb-0">جميع الإشعارات الموجهة إليك. الإشعارات الغير مقروءة موضحة بعلامة مميزة.</p>
+    </div>
+    <div class="d-flex gap-2">
+        @if (Model.Any(n => !readIds.Contains(n.Id)))
+        {
+            <form asp-action="MarkAllAsRead" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-secondary">
+                    ✅ تحديد الكل كمقروء
+                </button>
+            </form>
+        }
+        @if (User.IsInRole("Admin"))
+        {
+            <a asp-action="Manage" class="btn btn-outline-dark">⚙️ إدارة الإشعارات</a>
+            <a asp-action="Create" class="btn btn-primary">📢 إرسال إشعار</a>
+        }
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card text-center p-5 shadow-sm border-0">
+        <div class="fs-1 mb-2">🔔</div>
+        <h4>لا توجد إشعارات حتى الآن</h4>
+        <p class="text-muted">ستظهر هنا جميع الإشعارات المرسلة إليك من المشرفين والنظام تلقائياً.</p>
+    </div>
+}
+else
+{
+    <div class="d-flex flex-column gap-2">
+        @foreach (var notif in Model)
+        {
+            bool isRead = readIds.Contains(notif.Id);
+            var cardBg = isRead ? "bg-white" : "bg-primary bg-opacity-10 border-primary";
+            var iconByType = notif.NotificationType switch
+            {
+                "GradeChange" => "🏅",
+                "Attendance"  => "📋",
+                "Market"      => "🎮",
+                "Team"        => "🛡️",
+                "Custom"      => "📢",
+                _ => "🔔"
+            };
+
+            <div class="card shadow-sm border-0 @cardBg" style="border-right: 4px solid @(isRead ? "#dee2e6" : "#0d6efd") !important;">
+                <div class="card-body py-3 px-4">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div class="d-flex align-items-start gap-3 flex-grow-1">
+                            <div class="fs-3 flex-shrink-0">@iconByType</div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                    <h6 class="fw-bold mb-0 @(isRead ? "text-dark" : "text-primary")">@notif.Title</h6>
+                                    @if (!isRead)
+                                    {
+                                        <span class="badge bg-primary rounded-pill" style="font-size: 10px;">جديد</span>
+                                    }
+                                    <span class="badge bg-light text-muted border" style="font-size: 10px;">@notif.NotificationType</span>
+                                </div>
+                                <p class="text-muted mb-1 small">@notif.Message</p>
+                                @if (!string.IsNullOrWhiteSpace(notif.LinkUrl))
+                                {
+                                    <a href="@notif.LinkUrl" class="btn btn-sm btn-link text-decoration-none p-0 small">
+                                        ← عرض التفاصيل
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                        <div class="text-end flex-shrink-0">
+                            <div class="text-muted small">@notif.CreatedAt.ToString("yyyy/MM/dd")</div>
+                            <div class="text-muted" style="font-size: 11px;">@notif.CreatedAt.ToString("HH:mm")</div>
+                            @if (!isRead)
+                            {
+                                <form asp-action="MarkAsRead" asp-route-id="@notif.Id" method="post" class="mt-1">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 11px;">
+                                        تحديد كمقروء
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

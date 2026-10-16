@@ -155,6 +155,65 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("MyMvcApp10.Models.AppNotification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("LinkUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("NotificationType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("TargetTeamId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TargetUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("TargetTeamId");
+
+                    b.HasIndex("TargetType");
+
+                    b.HasIndex("TargetUserId");
+
+                    b.ToTable("AppNotifications");
+                });
+
             modelBuilder.Entity("MyMvcApp10.Models.ApplicationSetting", b =>
                 {
                     b.Property<int>("Id")
@@ -257,6 +316,9 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                     b.Property<string>("Mobile")
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
+
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("bit");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -673,6 +735,190 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                     b.ToTable("GradingTransactions");
                 });
 
+            modelBuilder.Entity("MyMvcApp10.Models.MagicCard", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("BoughtAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("BoughtByTeamId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsSold")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Price")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoughtByTeamId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("IsSold");
+
+                    b.HasIndex("IsUsed");
+
+                    b.ToTable("MagicCards");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.MagicCardPurchaseDeduction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CardId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PointsDeducted")
+                        .HasColumnType("int");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CardId");
+
+                    b.HasIndex("StudentId");
+
+                    b.ToTable("MagicCardPurchaseDeductions");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.MarketCardComment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CardId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CardId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("MarketCardComments");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.MarketCardReaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CardId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReactionType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("CardId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("MarketCardReactions");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.MarketCategory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("MarketCategories");
+                });
+
             modelBuilder.Entity("MyMvcApp10.Models.SchoolClass", b =>
                 {
                     b.Property<int>("Id")
@@ -719,6 +965,94 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                         .IsUnique();
 
                     b.ToTable("SchoolLevels");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.Team", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Teams");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.TeamMember", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("TeamId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentId")
+                        .IsUnique();
+
+                    b.HasIndex("TeamId");
+
+                    b.ToTable("TeamMembers");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.UserNotificationRead", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("NotificationId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("NotificationId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserNotificationReads");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -770,6 +1104,30 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.AppNotification", b =>
+                {
+                    b.HasOne("MyMvcApp10.Models.ApplicationUser", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MyMvcApp10.Models.Team", "TargetTeam")
+                        .WithMany()
+                        .HasForeignKey("TargetTeamId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("MyMvcApp10.Models.ApplicationUser", "TargetUser")
+                        .WithMany()
+                        .HasForeignKey("TargetUserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("TargetTeam");
+
+                    b.Navigation("TargetUser");
                 });
 
             modelBuilder.Entity("MyMvcApp10.Models.ApplicationUser", b =>
@@ -906,6 +1264,81 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                     b.Navigation("Teacher");
                 });
 
+            modelBuilder.Entity("MyMvcApp10.Models.MagicCard", b =>
+                {
+                    b.HasOne("MyMvcApp10.Models.Team", "BoughtByTeam")
+                        .WithMany("BoughtCards")
+                        .HasForeignKey("BoughtByTeamId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MyMvcApp10.Models.MarketCategory", "Category")
+                        .WithMany("Cards")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BoughtByTeam");
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.MagicCardPurchaseDeduction", b =>
+                {
+                    b.HasOne("MyMvcApp10.Models.MagicCard", "Card")
+                        .WithMany("PurchaseDeductions")
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyMvcApp10.Models.ApplicationUser", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Card");
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.MarketCardComment", b =>
+                {
+                    b.HasOne("MyMvcApp10.Models.MagicCard", "Card")
+                        .WithMany("Comments")
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyMvcApp10.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Card");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.MarketCardReaction", b =>
+                {
+                    b.HasOne("MyMvcApp10.Models.MagicCard", "Card")
+                        .WithMany("Reactions")
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyMvcApp10.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Card");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("MyMvcApp10.Models.SchoolClass", b =>
                 {
                     b.HasOne("MyMvcApp10.Models.SchoolLevel", "SchoolLevel")
@@ -915,6 +1348,49 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                         .IsRequired();
 
                     b.Navigation("SchoolLevel");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.TeamMember", b =>
+                {
+                    b.HasOne("MyMvcApp10.Models.ApplicationUser", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyMvcApp10.Models.Team", "Team")
+                        .WithMany("Members")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Student");
+
+                    b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.UserNotificationRead", b =>
+                {
+                    b.HasOne("MyMvcApp10.Models.AppNotification", "Notification")
+                        .WithMany("Reads")
+                        .HasForeignKey("NotificationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyMvcApp10.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Notification");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.AppNotification", b =>
+                {
+                    b.Navigation("Reads");
                 });
 
             modelBuilder.Entity("MyMvcApp10.Models.ApplicationUser", b =>
@@ -947,6 +1423,20 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                     b.Navigation("AttendanceRecords");
                 });
 
+            modelBuilder.Entity("MyMvcApp10.Models.MagicCard", b =>
+                {
+                    b.Navigation("Comments");
+
+                    b.Navigation("PurchaseDeductions");
+
+                    b.Navigation("Reactions");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.MarketCategory", b =>
+                {
+                    b.Navigation("Cards");
+                });
+
             modelBuilder.Entity("MyMvcApp10.Models.SchoolClass", b =>
                 {
                     b.Navigation("Students");
@@ -957,6 +1447,13 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                     b.Navigation("Classes");
 
                     b.Navigation("Students");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.Team", b =>
+                {
+                    b.Navigation("BoughtCards");
+
+                    b.Navigation("Members");
                 });
 #pragma warning restore 612, 618
         }

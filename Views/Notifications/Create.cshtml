@@ -1,0 +1,98 @@
+@model MyMvcApp10.Models.CreateCustomNotificationViewModel
+@{
+    ViewData["Title"] = "إرسال إشعار مخصص";
+    var users = ViewBag.Users as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var teams = ViewBag.Teams as IEnumerable<MyMvcApp10.Models.Team> ?? Enumerable.Empty<MyMvcApp10.Models.Team>();
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h4 class="fw-bold mb-0 text-dark">📢 إرسال إشعار مخصص</h4>
+                <a asp-action="Manage" class="btn btn-sm btn-outline-secondary">عودة لمركز الإشعارات</a>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label fw-bold"></label>
+                        <input asp-for="Title" class="form-control" placeholder="مثال: تذكير بموعد النشاط الأسبوعي" required />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Message" class="form-label fw-bold"></label>
+                        <textarea asp-for="Message" class="form-control" rows="4" placeholder="اكتب نص الإشعار بالتفصيل..." required></textarea>
+                        <span asp-validation-for="Message" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="LinkUrl" class="form-label fw-bold"></label>
+                        <input asp-for="LinkUrl" class="form-control" placeholder="مثال: /GamesMarket أو /Student/Dashboard (اختياري)" />
+                        <span asp-validation-for="LinkUrl" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="TargetType" class="form-label fw-bold">الفئة المستهدفة <span class="text-danger">*</span></label>
+                        <select asp-for="TargetType" class="form-select" id="targetTypeSelect" onchange="updateTargetVisibility()" required>
+                            <option value="All">🌐 الجميع</option>
+                            <option value="Students">📚 جميع المخدومين</option>
+                            <option value="Teachers">👨‍🏫 جميع الخدام</option>
+                            <option value="Admins">🛡️ جميع المشرفين</option>
+                            <option value="SpecificUser">👤 مستخدم بعينه</option>
+                            <option value="SpecificTeam">🛡️ فريق بعينه</option>
+                        </select>
+                        <span asp-validation-for="TargetType" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Specific User Dropdown -->
+                    <div class="mb-3" id="specificUserDiv" style="display: none;">
+                        <label asp-for="TargetUserId" class="form-label fw-bold">اختيار المستخدم المحدد</label>
+                        <select asp-for="TargetUserId" class="form-select" id="targetUserSelect">
+                            <option value="">-- اختار مستخدمًا --</option>
+                            @foreach (var user in users)
+                            {
+                                <option value="@user.Id">@user.FullName (@user.UserName) - @user.Role</option>
+                            }
+                        </select>
+                        <span asp-validation-for="TargetUserId" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Specific Team Dropdown -->
+                    <div class="mb-3" id="specificTeamDiv" style="display: none;">
+                        <label asp-for="TargetTeamId" class="form-label fw-bold">اختيار الفريق المحدد</label>
+                        <select asp-for="TargetTeamId" class="form-select" id="targetTeamSelect">
+                            <option value="">-- اختار فريقًا --</option>
+                            @foreach (var team in teams)
+                            {
+                                <option value="@team.Id">@team.Name</option>
+                            }
+                        </select>
+                        <span asp-validation-for="TargetTeamId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="pt-3 border-top d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4 fw-bold">📢 إرسال الإشعار</button>
+                        <a asp-action="Manage" class="btn btn-outline-secondary">إلغاء</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function updateTargetVisibility() {
+            const val = document.getElementById('targetTypeSelect').value;
+            document.getElementById('specificUserDiv').style.display = val === 'SpecificUser' ? 'block' : 'none';
+            document.getElementById('specificTeamDiv').style.display = val === 'SpecificTeam' ? 'block' : 'none';
+            document.getElementById('targetUserSelect').required = val === 'SpecificUser';
+            document.getElementById('targetTeamSelect').required = val === 'SpecificTeam';
+        }
+        updateTargetVisibility();
+    </script>
+}

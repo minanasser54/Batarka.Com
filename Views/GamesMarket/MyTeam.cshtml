@@ -1,0 +1,218 @@
+@{
+    ViewData["Title"] = "فريقنا - سوق الألعاب";
+    bool hasTeam = (bool)(ViewBag.HasTeam ?? false);
+    var team = ViewBag.Team as MyMvcApp10.Models.Team;
+    var totalBalance = (int)(ViewBag.TotalBalance ?? 0);
+    var boughtCards = ViewBag.BoughtCards as IEnumerable<MyMvcApp10.Models.MagicCard> ?? Enumerable.Empty<MyMvcApp10.Models.MagicCard>();
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">👥 لوحة تحكم فريقنا</h2>
+        <p class="text-muted mb-0">متابعة رصيد الفريق، درجات الأعضاء، والكروت السحرية المملوكة لفريقك فقط.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" class="btn btn-outline-primary">
+            🎮 سوق الألعاب
+        </a>
+        <a asp-action="Teams" class="btn btn-outline-secondary">
+            🏆 لوحة المنافسة العامة
+        </a>
+    </div>
+</div>
+
+@if (!hasTeam || team == null)
+{
+    <div class="card text-center p-5 shadow-sm">
+        <div class="fs-1 mb-2">🛡️</div>
+        <h4>أنت لست مسجلاً في أي فريق حالياً</h4>
+        <p class="text-muted">الاشتراك في الفرق وتعيين الأعضاء يتم حصرياً بواسطة المشرفين.</p>
+        <div class="mt-3">
+            <a asp-action="Teams" class="btn btn-primary">استعراض الفرق الموجودة</a>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Team Summary Card -->
+    <div class="card bg-primary text-white mb-4 shadow-sm border-0">
+        <div class="card-body p-4">
+            <div class="row align-items-center g-3">
+                <div class="col-md-auto text-center">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: #ffffff; color: #132c4a; display: flex; align-items: center; justify-content: center; font-size: 38px; margin: 0 auto; overflow: hidden;">
+                        @if (!string.IsNullOrWhiteSpace(team.LogoUrl))
+                        {
+                            <img src="@team.LogoUrl" alt="@team.Name" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src=''; this.parentElement.innerHTML='🛡️';" />
+                        }
+                        else
+                        {
+                            <span>🛡️</span>
+                        }
+                    </div>
+                </div>
+                <div class="col-md">
+                    <h3 class="fw-bold mb-1">فريق @team.Name</h3>
+                    @if (!string.IsNullOrWhiteSpace(team.Description))
+                    {
+                        <p class="text-white-50 mb-1">@team.Description</p>
+                    }
+                    <div class="small text-white-50">
+                        تاريخ الإنشاء: @team.CreatedAt.ToString("yyyy/MM/dd") | عدد الأعضاء: @team.Members.Count
+                    </div>
+                </div>
+                <div class="col-md-auto text-md-end text-center">
+                    <div class="text-white-50 small">رصيد الفريق الإجمالي</div>
+                    <div class="fs-1 fw-bold text-warning">@totalBalance.ToString("N0") <span class="fs-5 text-white">نقطة</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Members Breakdown -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="fw-bold mb-0 text-dark">👤 أعضاء الفريق ومساهمات النقاط</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 text-center">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th class="text-start">اسم المخدوم</th>
+                                    <th>اسم المستخدم</th>
+                                    <th>الفصل</th>
+                                    <th>رصيد الدرجات الحالي</th>
+                                    <th>النسبة من رصيد الفريق</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    int index = 1;
+                                }
+                                @foreach (var member in team.Members.OrderByDescending(m => m.Student.GradingBalance))
+                                {
+                                    var percent = totalBalance > 0 ? (member.Student.GradingBalance * 100.0 / totalBalance) : 0;
+                                    <tr>
+                                        <td>@index</td>
+                                        <td class="text-start fw-bold text-dark">
+                                            @member.Student.FullName
+                                            @if (User.Identity?.Name == member.Student.UserName)
+                                            {
+                                                <span class="badge bg-primary ms-1">أنت</span>
+                                            }
+                                        </td>
+                                        <td class="text-muted small">@member.Student.UserName</td>
+                                        <td>@(member.Student.SchoolClass != null ? member.Student.SchoolClass.Name : member.Student.ClassName ?? "-")</td>
+                                        <td>
+                                            <span class="badge @(member.Student.GradingBalance >= 0 ? "bg-success" : "bg-danger") px-3 py-2 fs-6">
+                                                @member.Student.GradingBalance نقطة
+                                            </span>
+                                        </td>
+                                        <td style="width: 200px;">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress flex-grow-1" style="height: 8px;">
+                                                    <div class="progress-bar bg-warning" role="progressbar" style="width: @(Math.Max(0, percent))%"></div>
+                                                </div>
+                                                <span class="small text-muted" style="min-width: 45px;">@percent.ToString("0.0")%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    index++;
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Owned Magic Cards -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold mb-0 text-dark">🃏 الكروت السحرية المملوكة للفريق (@boughtCards.Count())</h5>
+                <small class="text-muted">هذه الكروت خاصة بفريقكم فقط ولا يراها أي فريق آخر.</small>
+            </div>
+            <a asp-action="Index" class="btn btn-sm btn-outline-primary">➕ شراء كارت جديد من السوق</a>
+        </div>
+        <div class="card-body">
+            @if (!boughtCards.Any())
+            {
+                <div class="text-center py-5">
+                    <div class="fs-1 mb-2">🛒</div>
+                    <h5>فريقكم لم يشترِ أي كروت سحرية بعد</h5>
+                    <p class="text-muted">اجمعوا نقاطكم واشتروا كروت مميزة للمنافسة في الألعاب والأنشطة!</p>
+                    <a asp-action="Index" class="btn btn-primary mt-2">الانتقال إلى سوق الألعاب</a>
+                </div>
+            }
+            else
+            {
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    @foreach (var card in boughtCards)
+                    {
+                        <div class="col">
+                            <div class="card h-100 border shadow-sm position-relative overflow-hidden">
+                                <div style="height: 160px; background: linear-gradient(135deg, #1f2937, #374151); position: relative; overflow: hidden;" class="text-center">
+                                    @if (!string.IsNullOrWhiteSpace(card.ImageUrl))
+                                    {
+                                        <img src="@card.ImageUrl" alt="@card.Title" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src=''; this.parentElement.innerHTML='<div class=\'h-100 d-flex align-items-center justify-content-center text-warning fs-1\'>🃏</div>';" />
+                                    }
+                                    else
+                                    {
+                                        <div class="h-100 d-flex align-items-center justify-content-center text-warning fs-1">
+                                            🃏
+                                        </div>
+                                    }
+
+                                    <span class="badge bg-secondary position-absolute top-0 end-0 m-2 px-2 py-1">
+                                        @card.Category.Name
+                                    </span>
+
+                                    @if (card.IsUsed)
+                                    {
+                                        <div class="position-absolute bottom-0 start-0 w-100 bg-secondary text-white py-1 small fw-bold">
+                                            ✓ تم استخدام هذا الكارت
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="position-absolute bottom-0 start-0 w-100 bg-success text-white py-1 small fw-bold">
+                                            ⚡ جاهز للاستخدام في النشاط
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title fw-bold text-dark mb-0">@card.Title</h6>
+                                        <span class="badge bg-warning text-dark">@card.Price نقطة</span>
+                                    </div>
+
+                                    <p class="text-muted small flex-grow-1">
+                                        @(string.IsNullOrWhiteSpace(card.Description) ? "لا يوجد وصف إضافي." : card.Description)
+                                    </p>
+
+                                    <div class="pt-2 border-top small text-muted">
+                                        <div>تاريخ الشراء: @(card.BoughtAt.HasValue ? card.BoughtAt.Value.ToString("yyyy/MM/dd HH:mm") : "-")</div>
+                                        @if (card.IsUsed)
+                                        {
+                                            <div class="text-secondary">تاريخ الاستخدام: @(card.UsedAt.HasValue ? card.UsedAt.Value.ToString("yyyy/MM/dd HH:mm") : "-")</div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <div class="alert alert-light border mt-4 mb-0 small text-muted">
+                📌 <strong>ملاحظة هامة:</strong> لا يمكن لأعضاء الفريق إعادة بيع الكروت السحرية بعد الشراء. إذا تم إلغاء الكارت بواسطة المشرف، يُعاد الرصيد المخصوم تلقائياً وبدقة لكل عضو في الفريق.
+            </div>
+        </div>
+    </div>
+}

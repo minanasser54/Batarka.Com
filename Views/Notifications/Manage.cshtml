@@ -1,0 +1,88 @@
+@model IEnumerable<MyMvcApp10.Models.AppNotification>
+@{
+    ViewData["Title"] = "إدارة الإشعارات (المشرف)";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">⚙️ مركز إدارة الإشعارات</h2>
+        <p class="text-muted mb-0">استعراض وحذف جميع الإشعارات المرسلة في النظام.</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">📢 إرسال إشعار مخصص جديد</a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white border-bottom py-3">
+        <h5 class="fw-bold mb-0 text-dark">آخر 100 إشعار في النظام</h5>
+    </div>
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <div class="fs-1 mb-2">🔔</div>
+                <p>لا توجد إشعارات مرسلة في النظام حتى الآن.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th class="text-start">العنوان</th>
+                            <th>النوع</th>
+                            <th>الموجَّه إلى</th>
+                            <th>المرسِل</th>
+                            <th>التاريخ</th>
+                            <th>حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var notif in Model)
+                        {
+                            var targetLabel = notif.TargetType switch
+                            {
+                                "All" => "🌐 الجميع",
+                                "Students" => "📚 المخدومين",
+                                "Teachers" => "👨‍🏫 الخدام",
+                                "Admins" => "🛡️ المشرفين",
+                                "SpecificUser" => $"👤 {notif.TargetUser?.FullName ?? notif.TargetUserId}",
+                                "SpecificTeam" => $"🛡️ فريق: {notif.TargetTeam?.Name ?? notif.TargetTeamId.ToString()}",
+                                _ => notif.TargetType
+                            };
+
+                            <tr>
+                                <td>@index</td>
+                                <td class="text-start">
+                                    <div class="fw-bold text-dark">@notif.Title</div>
+                                    <div class="small text-muted text-truncate" style="max-width: 300px;">@notif.Message</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">@notif.NotificationType</span>
+                                </td>
+                                <td class="small">@targetLabel</td>
+                                <td class="small text-muted">
+                                    @(notif.CreatedBy?.FullName ?? "النظام")
+                                </td>
+                                <td class="small text-muted">
+                                    @notif.CreatedAt.ToString("yyyy/MM/dd HH:mm")
+                                </td>
+                                <td>
+                                    <form asp-action="Delete" asp-route-id="@notif.Id" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا الإشعار؟');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

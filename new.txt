@@ -1,0 +1,74 @@
+
+
+I Need you to apply this changes 
+
+1. handle the reset password for the student / teacher by them selfes on 1st login and by admin can reset all passwords wo knowing the old
+2. make the password policy simple 
+2.5. enhance the admin control over the student grades to be also can directly changed typed 53 > 23 example and still the green red and black act the same
+3. add a new separate feature to the site a "Games Market" the Team consists of Group of students
+and the balance of the Team is the sum of all students grades and if the bought any thing"Magic cards" from the Market
+each indivdual_grades -= int(price/team members) but the whole item price shouldnot be exceeded 
+4. make the admins only control the makret items and set Team members
+5. make team members cannot see other teams owned cards but card only tagged sold in the Market
+6. card should have a image price title category discription and make admin add all of them and category is a separate db model i need it to contain simple just text it will be like "ps/telematch/football...."
+7. make the admin mark the cards as Used when he wants to this means that a bought card is done 
+8. no sell students can do but admin can remove the ownership and auto return the grades to them means that if they want to sell tells admin
+9. Teams and Games market is totally a separate module from the main app target which is a forever attendance and grading
+10.  same student should join single team only
+11. make a team members dashboard appears to all , Games market where they see cards and buy , and separate team control page where each team member view bought cards and current sum of membes balance 
+12. add reacts and comments on the items in the market place and make the admin remove any he wants
+13. make a full notification system to the website and make a place where admin creates custom notification
+and add also notifcation on events 
+
+adjust any logic i missed 
+
+build localy and safe run then push
+
+
+context 
+dotnet path to use 
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+PS C:\Users\mina.nasser\Downloads\dotnet-sdk-10.0.107-win-x64> ls
+
+
+    Directory: C:\Users\mina.nasser\Downloads\dotnet-sdk-10.0.107-win-x64
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----        10/14/2026  11:04 AM                host
+d-----        10/15/2026  10:46 AM                metadata
+d-----        10/14/2026  11:05 AM                packs
+d-----        10/14/2026  11:02 AM                sdk
+d-----        10/14/2026  11:05 AM                sdk-manifests
+d-----        10/14/2026  11:04 AM                shared
+d-----        10/14/2026  11:04 AM                templates
+-a----        10/14/2026  11:02 AM            178 dnx.cmd
+-a----        10/14/2026  11:02 AM         167688 dotnet.exe
+-a----        10/14/2026  11:02 AM           9519 LICENSE.txt
+-a----        10/14/2026  11:02 AM          78887 ThirdPartyNotices.txt
+
+
+PS C:\Users\mina.nasser\Downloads\dotnet-sdk-10.0.107-win-x64>
+
+
+
+
+pwd 
+PS C:\Users\mina.nasser\Downloads\CH_MVC\MyMvcApp10> pwd
+
+Path
+----
+C:\Users\mina.nasser\Downloads\CH_MVC\MyMvcApp10
+
+
+
+repo to push on 
+https://github.com/minanasser54/Batarka.Com.git
+
+monsterasp takes latest main commit and rebuild from it
+read the env example to understand and i already handled the env on monster and sqlserver db conn
+
+

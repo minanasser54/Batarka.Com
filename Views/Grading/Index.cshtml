@@ -96,9 +96,18 @@
                             <td>@(student.SchoolClass?.Name ?? student.ClassName ?? "—")</td>
                             <td>@(student.SchoolLevel?.Name ?? student.Level ?? "—")</td>
                             <td>
-                                <span class="badge-score balance-badge @(student.GradingBalance >= 0 ? "positive" : "negative")" id="balance-@student.Id">
-                                    @student.GradingBalance
-                                </span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge-score balance-badge @(student.GradingBalance >= 0 ? "positive" : "negative")" id="balance-@student.Id">
+                                        @student.GradingBalance
+                                    </span>
+                                    @if (ViewBag.IsAdmin == true || User.IsInRole("Admin"))
+                                    {
+                                        <div class="input-group input-group-sm" style="max-width: 140px;">
+                                            <input type="number" class="form-control form-control-sm direct-input" id="input-balance-@student.Id" value="@student.GradingBalance" title="اكتب الرصيد الجديد مباشرة" />
+                                            <button type="button" class="btn btn-outline-primary btn-sm btn-save-direct" data-id="@student.Id" title="حفظ الرصيد">💾</button>
+                                        </div>
+                                    }
+                                </div>
                             </td>
                             <td>
                                 <div class="btn-group" role="group">
@@ -145,6 +154,7 @@
     const stopQrBtn = document.getElementById('stopQrBtn');
     const qrReader = document.getElementById('qrReader');
     const qrStatus = document.getElementById('qrStatus');
+    const isAdmin = @(ViewBag.IsAdmin == true || User.IsInRole("Admin") ? "true" : "false");
 
     let qrScanner = null;
     let searchDebounceTimer = null;
@@ -204,9 +214,17 @@
                 <td>${escapeHtml(s.className || '—')}</td>
                 <td>${escapeHtml(s.levelName || '—')}</td>
                 <td>
-                    <span class="badge-score balance-badge ${s.gradingBalance >= 0 ? 'positive' : 'negative'}" id="balance-${s.id}">
-                        ${s.gradingBalance}
-                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge-score balance-badge ${s.gradingBalance >= 0 ? 'positive' : 'negative'}" id="balance-${s.id}">
+                            ${s.gradingBalance}
+                        </span>
+                        ${isAdmin ? `
+                            <div class="input-group input-group-sm" style="max-width: 140px;">
+                                <input type="number" class="form-control form-control-sm direct-input" id="input-balance-${s.id}" value="${s.gradingBalance}" title="اكتب الرصيد الجديد مباشرة" />
+                                <button type="button" class="btn btn-outline-primary btn-sm btn-save-direct" data-id="${s.id}" title="حفظ الرصيد">💾</button>
+                            </div>
+                        ` : ''}
+                    </div>
                 </td>
                 <td>
                     <div class="btn-group" role="group">
@@ -281,6 +299,8 @@
                 if (badge) {
                     badge.textContent = data.newBalance;
                     badge.className = `badge-score balance-badge ${data.newBalance >= 0 ? 'positive' : 'negative'}`;
+                    const directInput = document.getElementById(`input-balance-${studentId}`);
+                    if (directInput) directInput.value = data.newBalance;
                     // Pulse animation
                     badge.style.transform = 'scale(1.25)';
                     badge.style.transition = 'transform 0.2s ease-in-out';
@@ -295,6 +315,70 @@
         } finally {
             btn.disabled = false;
             btn.textContent = originalText;
+        }
+    });
+
+    // Delegated click event for direct grade adjustment by Admin
+    studentsBody.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.btn-save-direct');
+        if (!btn) return;
+
+        const studentId = btn.getAttribute('data-id');
+        const input = document.getElementById(`input-balance-${studentId}`);
+        if (!studentId || !input) return;
+
+        const newBalance = parseInt(input.value, 10);
+        if (isNaN(newBalance)) {
+            showAlert('يرجى إدخال رقم صحيح.', false);
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = '...';
+
+        try {
+            const formData = new FormData();
+            formData.append('studentId', studentId);
+            formData.append('newBalance', newBalance);
+            formData.append('__RequestVerificationToken', token);
+
+            const res = await fetch('/Grading/DirectAdjustGrade', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                const badge = document.getElementById(`balance-${studentId}`);
+                if (badge) {
+                    badge.textContent = data.newBalance;
+                    badge.className = `badge-score balance-badge ${data.newBalance >= 0 ? 'positive' : 'negative'}`;
+                    badge.style.transform = 'scale(1.25)';
+                    setTimeout(() => badge.style.transform = 'scale(1)', 200);
+                }
+                showAlert(data.message || 'تم تعديل الرصيد بنجاح!', true);
+            } else {
+                showAlert(data.message || 'فشل تعديل الرصيد.', false);
+            }
+        } catch (err) {
+            showAlert('حدث خطأ أثناء الاتصال بالخادم.', false);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '💾';
+        }
+    });
+
+    // Enter key support inside direct grade inputs
+    studentsBody.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.classList.contains('direct-input')) {
+            e.preventDefault();
+            const studentId = e.target.id.replace('input-balance-', '');
+            const btn = studentsBody.querySelector(`.btn-save-direct[data-id="${studentId}"]`);
+            if (btn) btn.click();
         }
     });
 

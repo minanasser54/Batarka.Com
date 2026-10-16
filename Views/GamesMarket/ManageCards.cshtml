@@ -1,0 +1,144 @@
+@model IEnumerable<MyMvcApp10.Models.MagicCard>
+@{
+    ViewData["Title"] = "إدارة كروت سوق الألعاب";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">🃏 إدارة كروت سوق الألعاب</h2>
+        <p class="text-muted mb-0">إضافة وتعديل الكروت وتحديد حالتها (مباع، تم الاستخدام، أو استرجاع النقاط للأعضاء).</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="CreateCard" class="btn btn-primary">➕ إضافة كارت جديد</a>
+        <a asp-action="Categories" class="btn btn-outline-secondary">🏷️ الأقسام</a>
+        <a asp-action="ManageTeams" class="btn btn-outline-dark">👥 إدارة الفرق</a>
+        <a asp-action="Index" class="btn btn-outline-primary">🎮 عرض السوق</a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0 text-dark">قائمة الكروت في النظام (@Model.Count())</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-center">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>الصورة</th>
+                        <th class="text-start">العنوان</th>
+                        <th>القسم</th>
+                        <th>السعر</th>
+                        <th>الحالة</th>
+                        <th>الفريق المشتري</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                لا توجد كروت مضافة حتى الآن. <a asp-action="CreateCard">أضف أول كارت</a>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        int index = 1;
+                        @foreach (var card in Model)
+                        {
+                            <tr>
+                                <td>@index</td>
+                                <td style="width: 70px;">
+                                    @if (!string.IsNullOrWhiteSpace(card.ImageUrl))
+                                    {
+                                        <img src="@card.ImageUrl" alt="@card.Title" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" onerror="this.src=''; this.outerHTML='🃏';" />
+                                    }
+                                    else
+                                    {
+                                        <span class="fs-4">🃏</span>
+                                    }
+                                </td>
+                                <td class="text-start">
+                                    <div class="fw-bold text-dark">@card.Title</div>
+                                    @if (!string.IsNullOrWhiteSpace(card.Description))
+                                    {
+                                        <small class="text-muted text-truncate d-inline-block" style="max-width: 250px;">@card.Description</small>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">@card.Category.Name</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-warning text-dark fw-bold">@card.Price نقطة</span>
+                                </td>
+                                <td>
+                                    @if (!card.IsSold)
+                                    {
+                                        <span class="badge bg-success">متاح للشراء</span>
+                                    }
+                                    else if (card.IsUsed)
+                                    {
+                                        <span class="badge bg-dark">تم الاستخدام ✓</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">مباع (لم يُستخدم بعد)</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (card.BoughtByTeam != null)
+                                    {
+                                        <span class="fw-bold text-primary">@card.BoughtByTeam.Name</span>
+                                        <div class="small text-muted">@(card.BoughtAt?.ToString("yyyy/MM/dd") ?? "")</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex justify-content-center gap-1 flex-wrap">
+                                        <a asp-action="EditCard" asp-route-id="@card.Id" class="btn btn-sm btn-outline-primary" title="تعديل بيانات الكارت">
+                                            تعديل
+                                        </a>
+
+                                        @if (card.IsSold && !card.IsUsed)
+                                        {
+                                            <form asp-action="MarkCardAsUsed" asp-route-id="@card.Id" method="post" class="d-inline" onsubmit="return confirm('تأكيد استهلاك الكارت في النشاط/اللعبة؟');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-success" title="وضع علامة تم الاستخدام">
+                                                    ✓ تم الاستخدام
+                                                </button>
+                                            </form>
+                                        }
+
+                                        @if (card.IsSold)
+                                        {
+                                            <form asp-action="RefundCard" asp-route-id="@card.Id" method="post" class="d-inline" onsubmit="return confirm('تأكيد استرجاع الكارت وإعادة النقاط تلقائياً وبالتساوي لأعضاء الفريق المشترى؟');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-warning text-dark" title="استرجاع النقاط وإلغاء الشراء">
+                                                    ↩️ استرجاع النقاط
+                                                </button>
+                                            </form>
+                                        }
+
+                                        <form asp-action="DeleteCard" asp-route-id="@card.Id" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا الكارت نهائياً؟');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف الكارت">
+                                                حذف
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
