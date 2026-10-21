@@ -111,10 +111,28 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <h5 class="card-title mb-3">بيانات التواصل</h5>
-                    <p class="mb-2">
+                    <div class="mb-2">
                         <strong class="text-muted d-block small">رقم الموبايل:</strong>
-                        <span>@(string.IsNullOrWhiteSpace(Model.Mobile) ? "غير مسجل" : Model.Mobile)</span>
-                    </p>
+                        @if (!string.IsNullOrWhiteSpace(Model.Mobile))
+                        {
+                            var cleanPhone = Model.Mobile.Trim().Replace(" ", "").Replace("-", "");
+                            if (cleanPhone.StartsWith("0"))
+                            {
+                                cleanPhone = "2" + cleanPhone;
+                            }
+                            <div class="d-flex align-items-center justify-content-between mt-1">
+                                <span class="fw-bold font-monospace">@Model.Mobile</span>
+                                <div class="d-flex gap-1">
+                                    <a href="tel:@Model.Mobile" class="btn btn-sm btn-outline-primary py-0 px-2" title="اتصال">📞 اتصال</a>
+                                    <a href="https://wa.me/@cleanPhone" target="_blank" rel="noreferrer" class="btn btn-sm btn-success py-0 px-2" title="واتساب">💬 واتساب</a>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="text-muted">غير مسجل</span>
+                        }
+                    </div>
                     <p class="mb-2">
                         <strong class="text-muted d-block small">البريد الإلكتروني:</strong>
                         <span>@(string.IsNullOrWhiteSpace(Model.Email) ? "غير مسجل" : Model.Email)</span>
@@ -250,6 +268,67 @@
                     </table>
                 </div>
             </div>
+
+            @if (!Model.IsTeacher && !Model.IsAdmin)
+            {
+                var questionnaires = ViewBag.Questionnaires as List<MyMvcApp10.Models.AttendanceQuestionnaireSubmission> ?? new();
+                <div class="card shadow-sm mt-4">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">📝 سجل إجابات استبيان الحضور (@questionnaires.Count)</h5>
+                        @if (currentUser?.IsAdmin == true || currentUser?.IsTeacher == true)
+                        {
+                            <a asp-controller="Attendance" asp-action="QuestionnaireAnswers" asp-route-search="@Model.FullName" class="btn btn-sm btn-outline-info">عرض كل الاستبيانات</a>
+                        }
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>تاريخ الحضور</th>
+                                    <th>الأسئلة والإجابات</th>
+                                    <th>النقاط المكتسبة</th>
+                                    <th>الخادم المسجل</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (questionnaires.Any())
+                                {
+                                    @foreach (var q in questionnaires)
+                                    {
+                                        int pts = q.Answers.Where(a => a.AnswerValue).Sum(a => a.PointsAwarded);
+                                        <tr>
+                                            <td>@q.AttendanceRecord.AttendanceTimeUtc.ToString("dd/MM/yyyy")</td>
+                                            <td>
+                                                <div class="d-flex gap-1 flex-wrap">
+                                                    @foreach (var a in q.Answers)
+                                                    {
+                                                        if (a.AnswerValue)
+                                                        {
+                                                            <span class="badge bg-success" title="@(a.Question?.DisplayText) (+@a.PointsAwarded)">✓ @(a.Question?.DisplayText ?? "سؤال") (+@a.PointsAwarded)</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-light text-muted border" title="@(a.Question?.DisplayText): لا">✗ @(a.Question?.DisplayText ?? "سؤال")</span>
+                                                        }
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td><span class="badge-score positive">+@pts</span></td>
+                                            <td><small class="text-secondary">@(q.SubmittedBy?.FullName ?? "—")</small></td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-3">لا توجد استبيانات حضور مسجلة حتى الآن.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
         </div>
     </div>
 </div>

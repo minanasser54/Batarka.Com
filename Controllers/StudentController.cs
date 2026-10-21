@@ -116,6 +116,16 @@ public class StudentController : Controller
 
         ViewBag.Transactions = transactions;
         ViewBag.Attendance = attendance;
+        var questionnaires = await _db.AttendanceQuestionnaireSubmissions
+            .Include(s => s.AttendanceRecord)
+            .Include(s => s.Answers).ThenInclude(a => a.Question)
+            .Include(s => s.SubmittedBy)
+            .Where(s => s.AttendanceRecord.UserId == targetUser.Id)
+            .OrderByDescending(s => s.AttendanceRecord.AttendanceTimeUtc)
+            .Take(30)
+            .ToListAsync();
+
+        ViewBag.Questionnaires = questionnaires;
         ViewBag.TotalAttendanceCount = totalAttendanceCount;
         ViewBag.IsSelf = targetUser.Id == currentUser.Id;
         ViewBag.CurrentUser = currentUser;

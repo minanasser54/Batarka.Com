@@ -64,7 +64,7 @@ public class AdminController : Controller
         if (!string.IsNullOrWhiteSpace(search))
         {
             var q = search.Trim();
-            query = query.Where(u => u.FullName.Contains(q) || (u.UserName != null && u.UserName.Contains(q)));
+            query = query.Where(u => u.FullName.Contains(q) || (u.UserName != null && u.UserName.Contains(q)) || (u.Mobile != null && u.Mobile.Contains(q)) || (u.Address != null && u.Address.Contains(q)));
         }
 
         if (schoolClassId.HasValue)
@@ -102,7 +102,8 @@ public class AdminController : Controller
                 GradingBalance = u.GradingBalance,
                 TotalAttendance = _db.AttendanceRecords.Count(ar => ar.UserId == u.Id),
                 IsActive = u.IsActive,
-                CreatedAt = u.CreatedAt
+                CreatedAt = u.CreatedAt,
+                TeamName = _db.TeamMembers.Where(tm => tm.StudentId == u.Id).Select(tm => tm.Team.Name).FirstOrDefault()
             })
             .ToListAsync();
 
@@ -114,6 +115,173 @@ public class AdminController : Controller
         ViewBag.IsTeacher = actor.IsTeacher;
         return View(students);
     }
+
+
+    [HttpGet]
+    public async Task<IActionResult> ExportStudentsCsv(string? search, int? schoolClassId, int? schoolLevelId, string? className, string? level, string? activeStatus)
+    {
+        var actor = await GetCurrentUserAsync();
+        if (actor == null || (!actor.IsAdmin && !actor.IsTeacher))
+        {
+            return Forbid();
+        }
+
+        var query = _db.Users.Where(u => !u.IsAdmin && !u.IsTeacher && u.DeletedAt == null);
+        if (activeStatus == "active") query = query.Where(u => u.IsActive);
+        if (activeStatus == "inactive") query = query.Where(u => !u.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var q = search.Trim();
+            query = query.Where(u => u.FullName.Contains(q)
+                || (u.UserName != null && u.UserName.Contains(q))
+                || (u.Mobile != null && u.Mobile.Contains(q))
+                || (u.Address != null && u.Address.Contains(q)));
+        }
+
+        if (schoolClassId.HasValue)
+        {
+            query = query.Where(u => u.SchoolClassId == schoolClassId.Value);
+        }
+        else if (!string.IsNullOrWhiteSpace(className))
+        {
+            query = query.Where(u => u.ClassName == className);
+        }
+
+        if (schoolLevelId.HasValue)
+        {
+            query = query.Where(u => u.SchoolLevelId == schoolLevelId.Value);
+        }
+        else if (!string.IsNullOrWhiteSpace(level))
+        {
+            query = query.Where(u => u.Level == level);
+        }
+
+        var list = await query
+            .OrderBy(u => u.FullName)
+            .Select(u => new
+            {
+                u.FullName,
+                UserName = u.UserName ?? string.Empty,
+                u.Mobile,
+                u.Address,
+                ClassName = u.SchoolClass != null ? u.SchoolClass.Name : u.ClassName,
+                Level = u.SchoolLevel != null ? u.SchoolLevel.Name : u.Level,
+                u.GradingBalance,
+                TotalAttendance = _db.AttendanceRecords.Count(ar => ar.UserId == u.Id),
+                TeamName = _db.TeamMembers.Where(tm => tm.StudentId == u.Id).Select(tm => tm.Team.Name).FirstOrDefault(),
+                u.Notes,
+                u.IsActive,
+                u.CreatedAt
+            })
+            .ToListAsync();
+
+        var csv = new StringBuilder();
+        csv.AppendLine("الاسم,اسم المستخدم,رقم الموبايل,العنوان,المرحلة,الفصل,الفريق,الرصيد,مرات الحضور,ملاحظات,الحالة,تاريخ التسجيل");
+        foreach (var item in list)
+        {
+            csv.AppendLine(string.Join(',', new[]
+            {
+                CsvEscape(item.FullName),
+                CsvEscape(item.UserName),
+                CsvEscape(item.Mobile),
+                CsvEscape(item.Address),
+                CsvEscape(item.Level),
+                CsvEscape(item.ClassName),
+                CsvEscape(item.TeamName),
+                item.GradingBalance.ToString(),
+                item.TotalAttendance.ToString(),
+                CsvEscape(item.Notes),
+                item.IsActive ? "نشط" : "متوقف",
+                item.CreatedAt.ToString("yyyy-MM-dd")
+            }));
+        }
+
+        var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
+        return File(bytes, "text/csv; charset=utf-8", $"students-info-{DateTime.UtcNow:yyyyMMdd}.csv");
+    }
+
+    private static string CsvEscape(string? value)
+    {
+        var escaped = (value ?? string.Empty).Replace("\"", "\"\"");
+        return $"\"{escaped}\"";
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> StudentInfo(string? search, int? schoolClassId, int? schoolLevelId, string? activeStatus)
+    {
+        var actor = await GetCurrentUserAsync();
+        if (actor == null || (!actor.IsAdmin && !actor.IsTeacher))
+        {
+            return Forbid();
+        }
+
+        var query = _db.Users.Where(u => !u.IsAdmin && !u.IsTeacher && u.DeletedAt == null);
+        if (activeStatus == "active") query = query.Where(u => u.IsActive);
+        if (activeStatus == "inactive") query = query.Where(u => !u.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var q = search.Trim();
+            query = query.Where(u => u.FullName.Contains(q)
+                || (u.UserName != null && u.UserName.Contains(q))
+                || (u.Mobile != null && u.Mobile.Contains(q))
+                || (u.Address != null && u.Address.Contains(q)));
+        }
+
+        if (schoolClassId.HasValue) query = query.Where(u => u.SchoolClassId == schoolClassId.Value);
+        if (schoolLevelId.HasValue) query = query.Where(u => u.SchoolLevelId == schoolLevelId.Value);
+
+        var students = await query
+            .OrderBy(u => u.FullName)
+            .Select(u => new AdminStudentListItemViewModel
+            {
+                UserId = u.Id,
+                FullName = u.FullName,
+                UserName = u.UserName ?? string.Empty,
+                Email = u.Email,
+                Mobile = u.Mobile,
+                Address = u.Address,
+                Notes = u.Notes,
+                ClassName = u.SchoolClass != null ? u.SchoolClass.Name : u.ClassName,
+                Level = u.SchoolLevel != null ? u.SchoolLevel.Name : u.Level,
+                SchoolLevelId = u.SchoolLevelId,
+                GradingBalance = u.GradingBalance,
+                TotalAttendance = _db.AttendanceRecords.Count(ar => ar.UserId == u.Id),
+                IsActive = u.IsActive,
+                CreatedAt = u.CreatedAt,
+                TeamName = _db.TeamMembers.Where(tm => tm.StudentId == u.Id).Select(tm => tm.Team.Name).FirstOrDefault()
+            })
+            .ToListAsync();
+
+        var levels = await _db.SchoolLevels.OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToListAsync();
+        var classes = await _db.SchoolClasses.Include(x => x.SchoolLevel).OrderBy(x => x.SchoolLevel.SortOrder).ThenBy(x => x.Name).ToListAsync();
+
+        var model = new StudentContactDirectoryViewModel
+        {
+            Students = students,
+            Levels = levels,
+            Classes = classes,
+            Search = search,
+            SchoolLevelId = schoolLevelId,
+            SchoolClassId = schoolClassId,
+            ActiveStatus = activeStatus,
+            TotalCount = students.Count,
+            WithMobileCount = students.Count(s => !string.IsNullOrWhiteSpace(s.Mobile)),
+            WithAddressCount = students.Count(s => !string.IsNullOrWhiteSpace(s.Address))
+        };
+
+        ViewBag.IsAdmin = actor.IsAdmin;
+        ViewBag.IsTeacher = actor.IsTeacher;
+        return View(model);
+    }
+
+    [HttpGet]
+    public IActionResult Questionnaires()
+    {
+        return RedirectToAction("QuestionnaireAnswers", "Attendance");
+    }
+
 
     public async Task<IActionResult> Teachers()
     {

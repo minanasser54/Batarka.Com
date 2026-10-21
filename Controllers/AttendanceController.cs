@@ -533,4 +533,237 @@ public class AttendanceController : Controller
         });
         await _db.SaveChangesAsync();
     }
+
+    [HttpGet]
+    public async Task<IActionResult> QuestionnaireAnswers(DateTime? fromDate, DateTime? toDate, string? search, int? schoolLevelId, int? schoolClassId, int? questionId, bool? answerFilter)
+    {
+        var current = await GetCurrentUserAsync();
+        if (current == null || (!current.IsTeacher && !current.IsAdmin))
+        {
+            return Forbid();
+        }
+
+        var timeZone = await GetSchoolTimeZoneAsync();
+
+        var query = _db.AttendanceQuestionnaireSubmissions
+            .Include(s => s.AttendanceRecord).ThenInclude(r => r.User).ThenInclude(u => u!.SchoolClass)
+            .Include(s => s.AttendanceRecord).ThenInclude(r => r.User).ThenInclude(u => u!.SchoolLevel)
+            .Include(s => s.SubmittedBy)
+            .Include(s => s.Answers).ThenInclude(a => a.Question)
+            .AsQueryable();
+
+        if (fromDate.HasValue)
+        {
+            var fromUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Unspecified), timeZone);
+            query = query.Where(s => s.AttendanceRecord.AttendanceTimeUtc >= fromUtc);
+        }
+
+        if (toDate.HasValue)
+        {
+            var toUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(toDate.Value.Date.AddDays(1), DateTimeKind.Unspecified), timeZone);
+            query = query.Where(s => s.AttendanceRecord.AttendanceTimeUtc < toUtc);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var q = search.Trim();
+            query = query.Where(s => s.AttendanceRecord.User.FullName.Contains(q)
+                || (s.AttendanceRecord.User.UserName != null && s.AttendanceRecord.User.UserName.Contains(q))
+                || (s.AttendanceRecord.User.Mobile != null && s.AttendanceRecord.User.Mobile.Contains(q)));
+        }
+
+        if (schoolLevelId.HasValue)
+        {
+            query = query.Where(s => s.AttendanceRecord.User.SchoolLevelId == schoolLevelId.Value);
+        }
+
+        if (schoolClassId.HasValue)
+        {
+            query = query.Where(s => s.AttendanceRecord.User.SchoolClassId == schoolClassId.Value);
+        }
+
+        if (questionId.HasValue)
+        {
+            if (answerFilter.HasValue)
+            {
+                query = query.Where(s => s.Answers.Any(a => a.QuestionId == questionId.Value && a.AnswerValue == answerFilter.Value));
+            }
+            else
+            {
+                query = query.Where(s => s.Answers.Any(a => a.QuestionId == questionId.Value && a.AnswerValue));
+            }
+        }
+        else if (answerFilter.HasValue)
+        {
+            query = query.Where(s => s.Answers.Any(a => a.AnswerValue == answerFilter.Value));
+        }
+
+        var submissionsRaw = await query
+            .OrderByDescending(s => s.AttendanceRecord.AttendanceTimeUtc)
+            .ThenByDescending(s => s.SubmittedAtUtc)
+            .ToListAsync();
+
+        var allQuestions = await _db.AttendanceQuestionDefinitions
+            .OrderBy(q => q.SortOrder)
+            .ToListAsync();
+
+        var levels = await _db.SchoolLevels.OrderBy(l => l.SortOrder).ThenBy(l => l.Name).ToListAsync();
+        var classes = await _db.SchoolClasses.Include(c => c.SchoolLevel).OrderBy(c => c.SchoolLevel.SortOrder).ThenBy(c => c.Name).ToListAsync();
+
+        var submissions = submissionsRaw.Select(s => new QuestionnaireSubmissionListItemViewModel
+        {
+            SubmissionId = s.Id,
+            AttendanceRecordId = s.AttendanceRecordId,
+            StudentId = s.AttendanceRecord.UserId,
+            StudentName = s.AttendanceRecord.User?.FullName ?? "مخدوم غير محدد",
+            StudentUserName = s.AttendanceRecord.User?.UserName,
+            StudentMobile = s.AttendanceRecord.User?.Mobile,
+            ClassName = s.AttendanceRecord.User?.SchoolClass?.Name ?? s.AttendanceRecord.User?.ClassName,
+            LevelName = s.AttendanceRecord.User?.SchoolLevel?.Name ?? s.AttendanceRecord.User?.Level,
+            AttendanceDate = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(s.AttendanceRecord.AttendanceTimeUtc, DateTimeKind.Utc), timeZone),
+            SubmittedAtUtc = s.SubmittedAtUtc,
+            SubmittedByName = s.SubmittedBy?.FullName,
+            TotalPointsAwarded = s.Answers.Where(a => a.AnswerValue).Sum(a => a.PointsAwarded),
+            TotalQuestionsCount = s.Answers.Count,
+            AnsweredYesCount = s.Answers.Count(a => a.AnswerValue),
+            CorrectionReason = s.CorrectionReason,
+            Status = s.Status,
+            Answers = s.Answers.Select(a => new QuestionnaireAnswerItemDto
+            {
+                QuestionId = a.QuestionId,
+                QuestionText = a.Question?.DisplayText ?? string.Empty,
+                QuestionCode = a.Question?.Code ?? string.Empty,
+                AnswerValue = a.AnswerValue,
+                PointsAwarded = a.PointsAwarded
+            }).ToList()
+        }).ToList();
+
+        var totalPoints = submissions.Sum(s => s.TotalPointsAwarded);
+        var uniqueStudents = submissions.Select(s => s.StudentId).Distinct().Count();
+        var totalAnswered = submissions.Sum(s => s.TotalQuestionsCount);
+        var totalYes = submissions.Sum(s => s.AnsweredYesCount);
+        var positivePercentage = totalAnswered > 0 ? Math.Round((double)totalYes * 100 / totalAnswered, 1) : 0;
+
+        var questionStats = new Dictionary<int, (string Name, int YesCount, int TotalCount)>();
+        foreach (var q in allQuestions)
+        {
+            var answersForQ = submissionsRaw.SelectMany(s => s.Answers).Where(a => a.QuestionId == q.Id).ToList();
+            var qYes = answersForQ.Count(a => a.AnswerValue);
+            var qTot = answersForQ.Count;
+            questionStats[q.Id] = (q.DisplayText, qYes, qTot);
+        }
+
+        var model = new QuestionnaireAnswersPageViewModel
+        {
+            Submissions = submissions,
+            AllQuestions = allQuestions,
+            TotalSubmissionsCount = submissions.Count,
+            TotalPointsAwarded = totalPoints,
+            UniqueStudentsCount = uniqueStudents,
+            PositiveAnswerPercentage = positivePercentage,
+            QuestionStats = questionStats,
+            FromDate = fromDate,
+            ToDate = toDate,
+            Search = search,
+            SchoolLevelId = schoolLevelId,
+            SchoolClassId = schoolClassId,
+            QuestionId = questionId,
+            AnswerFilter = answerFilter,
+            Levels = levels,
+            Classes = classes
+        };
+
+        ViewData["Title"] = "إجابات استبيان الحضور";
+        return View(model);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportQuestionnairesCsv(DateTime? fromDate, DateTime? toDate, string? search, int? schoolLevelId, int? schoolClassId, int? questionId, bool? answerFilter)
+    {
+        var current = await GetCurrentUserAsync();
+        if (current == null || (!current.IsTeacher && !current.IsAdmin))
+        {
+            return Forbid();
+        }
+
+        var timeZone = await GetSchoolTimeZoneAsync();
+
+        var query = _db.AttendanceQuestionnaireSubmissions
+            .Include(s => s.AttendanceRecord).ThenInclude(r => r.User).ThenInclude(u => u!.SchoolClass)
+            .Include(s => s.AttendanceRecord).ThenInclude(r => r.User).ThenInclude(u => u!.SchoolLevel)
+            .Include(s => s.SubmittedBy)
+            .Include(s => s.Answers).ThenInclude(a => a.Question)
+            .AsQueryable();
+
+        if (fromDate.HasValue)
+        {
+            var fromUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Unspecified), timeZone);
+            query = query.Where(s => s.AttendanceRecord.AttendanceTimeUtc >= fromUtc);
+        }
+
+        if (toDate.HasValue)
+        {
+            var toUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(toDate.Value.Date.AddDays(1), DateTimeKind.Unspecified), timeZone);
+            query = query.Where(s => s.AttendanceRecord.AttendanceTimeUtc < toUtc);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var q = search.Trim();
+            query = query.Where(s => s.AttendanceRecord.User.FullName.Contains(q)
+                || (s.AttendanceRecord.User.UserName != null && s.AttendanceRecord.User.UserName.Contains(q))
+                || (s.AttendanceRecord.User.Mobile != null && s.AttendanceRecord.User.Mobile.Contains(q)));
+        }
+
+        if (schoolLevelId.HasValue) query = query.Where(s => s.AttendanceRecord.User.SchoolLevelId == schoolLevelId.Value);
+        if (schoolClassId.HasValue) query = query.Where(s => s.AttendanceRecord.User.SchoolClassId == schoolClassId.Value);
+
+        if (questionId.HasValue)
+        {
+            if (answerFilter.HasValue)
+                query = query.Where(s => s.Answers.Any(a => a.QuestionId == questionId.Value && a.AnswerValue == answerFilter.Value));
+            else
+                query = query.Where(s => s.Answers.Any(a => a.QuestionId == questionId.Value && a.AnswerValue));
+        }
+
+        var submissions = await query
+            .OrderByDescending(s => s.AttendanceRecord.AttendanceTimeUtc)
+            .ToListAsync();
+
+        var csv = new StringBuilder();
+        csv.AppendLine("تاريخ الحضور,المخدوم,اسم المستخدم,رقم الموبايل,المرحلة,الفصل,الخادم المسجل,السؤال,الإجابة,النقاط الممنوحة");
+
+        foreach (var s in submissions)
+        {
+            var student = s.AttendanceRecord.User;
+            var attDate = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(s.AttendanceRecord.AttendanceTimeUtc, DateTimeKind.Utc), timeZone).ToString("yyyy-MM-dd");
+            var studentName = student?.FullName ?? "";
+            var userName = student?.UserName ?? "";
+            var mobile = student?.Mobile ?? "";
+            var level = student?.SchoolLevel?.Name ?? student?.Level ?? "";
+            var className = student?.SchoolClass?.Name ?? student?.ClassName ?? "";
+            var teacher = s.SubmittedBy?.FullName ?? "";
+
+            foreach (var a in s.Answers)
+            {
+                csv.AppendLine(string.Join(',', new[]
+                {
+                    Csv(attDate),
+                    Csv(studentName),
+                    Csv(userName),
+                    Csv(mobile),
+                    Csv(level),
+                    Csv(className),
+                    Csv(teacher),
+                    Csv(a.Question?.DisplayText),
+                    a.AnswerValue ? "نعم" : "لا",
+                    a.AnswerValue ? a.PointsAwarded.ToString() : "0"
+                }));
+            }
+        }
+
+        var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
+        return File(bytes, "text/csv; charset=utf-8", $"questionnaire-answers-{DateTime.UtcNow:yyyyMMdd}.csv");
+    }
+
 }

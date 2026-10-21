@@ -435,7 +435,8 @@ public class AdminStudentListItemViewModel
     public int GradingBalance { get; set; }
     public int TotalAttendance { get; set; }
     public bool IsActive { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string? TeamName { get; set; }
 }
 
 public class AttendancePageViewModel

@@ -1,0 +1,317 @@
+@model MyMvcApp10.Models.StudentContactDirectoryViewModel
+@{
+    ViewData["Title"] = "دليل وبيانات تواصل المخدومين";
+    bool isTeacher = ViewBag.IsTeacher == true;
+    bool isAdmin = ViewBag.IsAdmin == true;
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h2 class="mb-1">📇 دليل وبيانات تواصل المخدومين</h2>
+        <p class="text-muted small mb-0">سجل كامل لأرقام هواتف المخدومين وعناوينهم وبيانات التواصل المباشر عبر واتساب والاتصال</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a asp-action="Students" class="btn btn-outline-secondary">📋 جدول إدارة المخدومين</a>
+        <a asp-action="ExportStudentsCsv" 
+           asp-route-search="@Model.Search" 
+           asp-route-schoolClassId="@Model.SchoolClassId" 
+           asp-route-schoolLevelId="@Model.SchoolLevelId" 
+           asp-route-activeStatus="@Model.ActiveStatus" 
+           class="btn btn-success">📥 تنزيل دليل التواصل CSV</a>
+    </div>
+</div>
+
+<!-- Contact Stats Overview -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 border-start border-primary border-4 p-3 bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small fw-semibold">إجمالي المخدومين</div>
+                    <div class="fs-3 fw-bold text-primary">@Model.TotalCount</div>
+                </div>
+                <div class="fs-1">🎒</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 border-start border-success border-4 p-3 bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small fw-semibold">مسجل لهم أرقام هواتف</div>
+                    <div class="fs-3 fw-bold text-success">@Model.WithMobileCount</div>
+                </div>
+                <div class="fs-1">📱</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 border-start border-warning border-4 p-3 bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small fw-semibold">مسجل لهم عناوين سكن</div>
+                    <div class="fs-3 fw-bold text-warning">@Model.WithAddressCount</div>
+                </div>
+                <div class="fs-1">📍</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filters -->
+<div class="card p-3 mb-4 shadow-sm">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">البحث السريع</label>
+            <input name="search" value="@Model.Search" class="form-control" placeholder="ابحث بالاسم، رقم الموبايل، اسم المستخدم، أو العنوان..." />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">المرحلة</label>
+            <select name="schoolLevelId" class="form-select">
+                <option value="">كل المراحل</option>
+                @foreach (var lvl in Model.Levels)
+                {
+                    <option value="@lvl.Id" selected="@(Model.SchoolLevelId == lvl.Id)">@lvl.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">الفصل</label>
+            <select name="schoolClassId" class="form-select">
+                <option value="">كل الفصول</option>
+                @foreach (var cls in Model.Classes)
+                {
+                    <option value="@cls.Id" selected="@(Model.SchoolClassId == cls.Id)">@cls.SchoolLevel.Name - @cls.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">الحالة</label>
+            <select name="activeStatus" class="form-select">
+                <option value="all" selected="@(Model.ActiveStatus == "all")">الكل</option>
+                <option value="active" selected="@(Model.ActiveStatus == "active")">نشط فقط</option>
+                <option value="inactive" selected="@(Model.ActiveStatus == "inactive")">غير نشط</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-grow-1">🔍 بحث</button>
+            <a asp-action="StudentInfo" class="btn btn-outline-secondary">إلغاء</a>
+        </div>
+    </form>
+</div>
+
+<!-- View Tabs: Cards or Table -->
+<ul class="nav nav-pills mb-3" id="viewTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="cards-tab" data-bs-toggle="pill" data-bs-target="#cardsView" type="button" role="tab">📇 كروت التواصل المباشر</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="table-tab" data-bs-toggle="pill" data-bs-target="#tableView" type="button" role="tab">📊 جدول التفاصيل</button>
+    </li>
+</ul>
+
+<div class="tab-content" id="viewTabContent">
+    <!-- Cards View -->
+    <div class="tab-pane fade show active" id="cardsView" role="tabpanel">
+        <div class="row g-3">
+            @if (Model.Students.Any())
+            {
+                @foreach (var s in Model.Students)
+                {
+                    var cleanPhone = (s.Mobile ?? "").Trim().Replace(" ", "").Replace("-", "");
+                    if (cleanPhone.StartsWith("0"))
+                    {
+                        cleanPhone = "2" + cleanPhone;
+                    }
+
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card h-100 shadow-sm border-0 border-top border-3 @(s.IsActive ? "border-success" : "border-danger")">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h5 class="card-title mb-0 fw-bold">
+                                            <a asp-controller="Student" asp-action="Profile" asp-route-id="@s.UserId" class="text-decoration-none text-dark">
+                                                @s.FullName
+                                            </a>
+                                        </h5>
+                                        <small class="text-muted">اسم المستخدم: @s.UserName</small>
+                                    </div>
+                                    <span class="badge @(s.IsActive ? "bg-success" : "bg-danger")">@(s.IsActive ? "نشط" : "متوقف")</span>
+                                </div>
+
+                                <div class="d-flex gap-1 mb-2 flex-wrap">
+                                    <span class="badge bg-secondary">@(s.Level ?? "—")</span>
+                                    <span class="badge bg-light text-dark border">@(s.ClassName ?? "—")</span>
+                                    @if (!string.IsNullOrWhiteSpace(s.TeamName))
+                                    {
+                                        <span class="badge bg-info text-dark">👥 @s.TeamName</span>
+                                    }
+                                    <span class="badge-score @(s.GradingBalance >= 0 ? "positive" : "negative") py-0 px-2">@s.GradingBalance نقطة</span>
+                                </div>
+
+                                <hr class="my-2" />
+
+                                <div class="mb-2">
+                                    <strong class="small text-muted d-block">📱 رقم الموبايل:</strong>
+                                    @if (!string.IsNullOrWhiteSpace(s.Mobile))
+                                    {
+                                        <div class="d-flex align-items-center justify-content-between mt-1">
+                                            <span class="fw-bold fs-6 font-monospace">@s.Mobile</span>
+                                            <div class="d-flex gap-1">
+                                                <a href="tel:@s.Mobile" class="btn btn-sm btn-outline-primary py-1 px-2" title="اتصال">
+                                                    📞 اتصال
+                                                </a>
+                                                <a href="https://wa.me/@cleanPhone" target="_blank" rel="noreferrer" class="btn btn-sm btn-success py-1 px-2" title="واتساب">
+                                                    💬 واتساب
+                                                </a>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">لم يتم تسجيل رقم موبايل</span>
+                                    }
+                                </div>
+
+                                <div class="mb-2">
+                                    <strong class="small text-muted d-block">📍 العنوان:</strong>
+                                    @if (!string.IsNullOrWhiteSpace(s.Address))
+                                    {
+                                        <span class="small">@s.Address</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(s.Notes))
+                                {
+                                    <div class="mb-2 bg-light p-2 rounded">
+                                        <strong class="small text-muted d-block">📝 ملاحظات:</strong>
+                                        <span class="small text-secondary">@s.Notes</span>
+                                    </div>
+                                }
+
+                                <div class="mt-auto pt-2 d-flex justify-content-between align-items-center border-top">
+                                    <small class="text-muted">الحضور: <strong>@s.TotalAttendance</strong> مرة</small>
+                                    <div class="d-flex gap-1">
+                                        <a asp-controller="Student" asp-action="Profile" asp-route-id="@s.UserId" class="btn btn-sm btn-outline-info">الملف</a>
+                                        <a asp-action="EditUser" asp-route-id="@s.UserId" class="btn btn-sm btn-outline-primary">تعديل</a>
+                                        <a asp-controller="QrCode" asp-action="ByUser" asp-route-id="@s.UserId" target="_blank" class="btn btn-sm btn-outline-secondary">QR</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="col-12 text-center py-5">
+                    <p class="text-muted fs-5">لم يتم العثور على أي مخدومين بالخيارات المحددة.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Table View -->
+    <div class="tab-pane fade" id="tableView" role="tabpanel">
+        <div class="card shadow-sm p-3">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>الاسم</th>
+                            <th>اسم المستخدم</th>
+                            <th>رقم الموبايل</th>
+                            <th>تواصل سريع</th>
+                            <th>العنوان</th>
+                            <th>المرحلة والفصل</th>
+                            <th>الفريق</th>
+                            <th>الرصيد</th>
+                            <th>الحضور</th>
+                            <th>ملاحظات</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model.Students)
+                        {
+                            var cleanPhone = (s.Mobile ?? "").Trim().Replace(" ", "").Replace("-", "");
+                            if (cleanPhone.StartsWith("0"))
+                            {
+                                cleanPhone = "2" + cleanPhone;
+                            }
+
+                            <tr>
+                                <td>
+                                    <a asp-controller="Student" asp-action="Profile" asp-route-id="@s.UserId" class="fw-bold text-decoration-none text-dark">
+                                        @s.FullName
+                                    </a>
+                                </td>
+                                <td><span class="badge bg-light text-dark font-monospace">@s.UserName</span></td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(s.Mobile))
+                                    {
+                                        <span class="font-monospace">@s.Mobile</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(s.Mobile))
+                                    {
+                                        <div class="d-flex gap-1">
+                                            <a href="tel:@s.Mobile" class="btn btn-sm btn-outline-primary py-0 px-2" title="اتصال">📞</a>
+                                            <a href="https://wa.me/@cleanPhone" target="_blank" rel="noreferrer" class="btn btn-sm btn-success py-0 px-2" title="واتساب">💬 واتساب</a>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+                                <td>@(string.IsNullOrWhiteSpace(s.Address) ? "—" : s.Address)</td>
+                                <td>
+                                    <div><span class="badge bg-secondary">@(s.Level ?? "—")</span></div>
+                                    <small class="text-muted">@(s.ClassName ?? "—")</small>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(s.TeamName))
+                                    {
+                                        <span class="badge bg-info text-dark">👥 @s.TeamName</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+                                <td><span class="badge-score @(s.GradingBalance >= 0 ? "positive" : "negative")">@s.GradingBalance</span></td>
+                                <td><span class="badge bg-light text-dark border">@s.TotalAttendance</span></td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(s.Notes))
+                                    {
+                                        <span class="d-inline-block text-truncate" style="max-width: 140px;" title="@s.Notes">@s.Notes</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <a asp-controller="Student" asp-action="Profile" asp-route-id="@s.UserId" class="btn btn-sm btn-outline-info">ملف</a>
+                                        <a asp-action="EditUser" asp-route-id="@s.UserId" class="btn btn-sm btn-outline-primary">تعديل</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

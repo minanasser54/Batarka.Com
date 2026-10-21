@@ -1,27 +1,42 @@
 @model List<MyMvcApp10.Models.AdminStudentListItemViewModel>
 @{
-    ViewData["Title"] = "إدارة المخدومين";
+    ViewData["Title"] = "إدارة وبيانات المخدومين";
+    bool isTeacher = ViewBag.IsTeacher == true;
+    bool isAdmin = ViewBag.IsAdmin == true;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>إدارة المخدومين</h2>
-    <div class="d-flex gap-2">
-        <a asp-controller="SchoolStructure" asp-action="Levels" class="btn btn-outline-secondary">المراحل والفصول</a>
-        <a asp-action="BulkStudents" class="btn btn-outline-secondary">إدارة جماعية</a>
-        <a asp-action="CreateUser" class="btn btn-success">إضافة مخدوم أو خادم</a>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h2 class="mb-1">📚 إدارة وبيانات المخدومين</h2>
+        <p class="text-muted small mb-0">عرض وتعديل بيانات المخدومين وأرقام الموبايل والعناوين والتواصل</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a asp-action="StudentInfo" class="btn btn-outline-info">📇 دليل كروت التواصل</a>
+        <a asp-action="ExportStudentsCsv" 
+           asp-route-search="@Context.Request.Query["search"]" 
+           asp-route-schoolClassId="@ViewBag.SelectedClassId" 
+           asp-route-schoolLevelId="@ViewBag.SelectedLevelId" 
+           asp-route-activeStatus="@Context.Request.Query["activeStatus"]" 
+           class="btn btn-outline-success">📥 تنزيل بيانات المخدومين (CSV)</a>
+        @if (isAdmin)
+        {
+            <a asp-controller="SchoolStructure" asp-action="Levels" class="btn btn-outline-secondary">المراحل والفصول</a>
+            <a asp-action="BulkStudents" class="btn btn-outline-secondary">إدارة جماعية</a>
+            <a asp-action="CreateUser" class="btn btn-success">+ إضافة مخدوم أو خادم</a>
+        }
     </div>
 </div>
 
-<div class="card p-3 mb-3">
+<div class="card p-3 mb-3 shadow-sm">
     <form method="get" class="row g-2 align-items-end">
         <div class="col-md-3">
-            <label class="form-label">البحث</label>
-            <input name="search" class="form-control" placeholder="اسم أو مستخدم" />
+            <label class="form-label fw-semibold">البحث</label>
+            <input name="search" value="@Context.Request.Query["search"]" class="form-control" placeholder="اسم، اسم مستخدم، موبايل، عنوان..." />
         </div>
         <div class="col-md-2">
-            <label class="form-label">الفصل</label>
+            <label class="form-label fw-semibold">الفصل</label>
             <select name="schoolClassId" class="form-select">
-                <option value="">الكل</option>
+                <option value="">كل الفصول</option>
                 @foreach (var item in ViewBag.Classes)
                 {
                     <option value="@item.Id" selected="@(ViewBag.SelectedClassId == item.Id)">@item.SchoolLevel.Name - @item.Name</option>
@@ -29,9 +44,9 @@
             </select>
         </div>
         <div class="col-md-2">
-            <label class="form-label">المرحلة</label>
+            <label class="form-label fw-semibold">المرحلة</label>
             <select name="schoolLevelId" class="form-select">
-                <option value="">الكل</option>
+                <option value="">كل المراحل</option>
                 @foreach (var item in ViewBag.Levels)
                 {
                     <option value="@item.Id" selected="@(ViewBag.SelectedLevelId == item.Id)">@item.Name</option>
@@ -39,74 +54,149 @@
             </select>
         </div>
         <div class="col-md-2">
-            <label class="form-label">الحالة</label>
+            <label class="form-label fw-semibold">الحالة</label>
             <select name="activeStatus" class="form-select">
-                <option value="all">الكل</option>
-                <option value="active">نشط</option>
-                <option value="inactive">غير نشط</option>
+                <option value="all" selected="@(Context.Request.Query["activeStatus"] == "all")">الكل</option>
+                <option value="active" selected="@(Context.Request.Query["activeStatus"] == "active")">نشط</option>
+                <option value="inactive" selected="@(Context.Request.Query["activeStatus"] == "inactive")">غير نشط</option>
             </select>
         </div>
-        <div class="col-md-3">
-            <button type="submit" class="btn btn-primary w-100">بحث</button>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-grow-1">🔍 تصفية وبحث</button>
+            <a asp-action="Students" class="btn btn-outline-secondary">إعادة ضبط</a>
         </div>
     </form>
 </div>
 
-<div class="table-responsive card p-3">
-    <table class="table table-striped mb-0">
-        <thead>
-            <tr>
-                <th>الاسم</th>
-                <th>اسم المستخدم</th>
-                <th>الفصل</th>
-                <th>المرحلة</th>
-                <th>الرصيد</th>
-                <th>الحضور</th>
-                <th>الحالة</th>
-                <th>تاريخ الإنشاء</th>
-                <th>إجراءات</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model != null && Model.Count > 0)
-            {
-                @foreach (var item in Model)
+<div class="card shadow-sm p-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small">إجمالي المخدومين في النتيجة: <strong>@(Model?.Count ?? 0)</strong></span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>الاسم</th>
+                    <th>اسم المستخدم</th>
+                    <th>الموبايل والتواصل</th>
+                    <th>العنوان</th>
+                    <th>المرحلة والفصل</th>
+                    <th>الفريق</th>
+                    <th>الرصيد</th>
+                    <th>الحضور</th>
+                    <th>ملاحظات</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Count > 0)
+                {
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-controller="Student" asp-action="Profile" asp-route-id="@item.UserId" class="fw-bold text-decoration-none text-dark">
+                                    @item.FullName
+                                </a>
+                            </td>
+                            <td><span class="badge bg-light text-dark font-monospace">@item.UserName</span></td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(item.Mobile))
+                                {
+                                    <div class="d-flex align-items-center gap-1">
+                                        <a href="tel:@item.Mobile" class="text-decoration-none fw-semibold" title="اتصال هاتفي">
+                                            📞 @item.Mobile
+                                        </a>
+                                        @{
+                                            var cleanPhone = item.Mobile.Trim().Replace(" ", "").Replace("-", "");
+                                            if (cleanPhone.StartsWith("0"))
+                                            {
+                                                cleanPhone = "2" + cleanPhone;
+                                            }
+                                        }
+                                        <a href="https://wa.me/@cleanPhone" target="_blank" rel="noreferrer" class="btn btn-sm btn-outline-success py-0 px-1" title="محادثة واتساب">
+                                            💬 واتساب
+                                        </a>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">غير مسجل</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(item.Address))
+                                {
+                                    <span title="@item.Address">📍 @item.Address</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
+                            <td>
+                                <div><span class="badge bg-secondary">@(item.Level ?? "—")</span></div>
+                                <small class="text-muted">@(item.ClassName ?? "—")</small>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(item.TeamName))
+                                {
+                                    <span class="badge bg-info text-dark">👥 @item.TeamName</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge-score @(item.GradingBalance >= 0 ? "positive" : "negative")">@item.GradingBalance</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">@item.TotalAttendance مرة</span>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(item.Notes))
+                                {
+                                    <span class="d-inline-block text-truncate" style="max-width: 120px;" title="@item.Notes">
+                                        📝 @item.Notes
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge @(item.IsActive ? "bg-success" : "bg-danger")">@(item.IsActive ? "نشط" : "متوقف")</span>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1 flex-wrap">
+                                    <a asp-controller="QrCode" asp-action="ByUser" asp-route-id="@item.UserId" target="_blank" rel="noreferrer" class="btn btn-sm btn-outline-secondary" title="كود QR">QR</a>
+                                    <a asp-controller="Student" asp-action="Profile" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-info" title="الملف">ملف</a>
+                                    <a asp-action="EditUser" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-primary" title="تعديل">تعديل</a>
+                                    @if (isAdmin)
+                                    {
+                                        <a asp-action="ResetPassword" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-warning" title="كلمة المرور">كلمة المرور</a>
+                                        <form asp-action="DeleteUser" asp-route-id="@item.UserId" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف حساب [@item.FullName] نهائياً؟');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف">حذف</button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
                 {
                     <tr>
-                        <td>@item.FullName</td>
-                        <td>@item.UserName</td>
-                        <td>@item.ClassName</td>
-                        <td>@item.Level</td>
-                        <td><span class="badge-score @(item.GradingBalance >= 0 ? "positive" : "negative")">@item.GradingBalance</span></td>
-                        <td>@item.TotalAttendance</td>
-                        <td>@(item.IsActive ? "نشط" : "متوقف")</td>
-                        <td>@item.CreatedAt.ToString("dd/MM/yyyy")</td>
-                        <td class="d-flex gap-1 flex-wrap">
-                            <a asp-controller="QrCode" asp-action="ByUser" asp-route-id="@item.UserId" target="_blank" rel="noreferrer" class="btn btn-sm btn-outline-secondary">عرض QR</a>
-                            <a asp-controller="Student" asp-action="Profile" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-info">الملف الشخصي</a>
-                            <a asp-action="EditUser" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-primary">تعديل</a>
-                            @if (User.IsInRole("Admin"))
-                            {
-                                <a asp-action="ResetPassword" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-warning">كلمة المرور</a>
-                                <form asp-action="DeleteUser" asp-route-id="@item.UserId" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف حساب [@item.FullName] نهائياً؟');">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
-                                </form>
-                            }
-                            @if (item.SchoolLevelId.HasValue)
-                            {
-                                <a asp-controller="SchoolStructure" asp-action="LevelStudents" asp-route-id="@item.SchoolLevelId" class="btn btn-sm btn-outline-secondary">طلاب المرحلة</a>
-                            }
+                        <td colspan="11" class="text-center text-muted py-4">
+                            لا توجد بيانات مطابقة لخيارات البحث المحددة.
                         </td>
                     </tr>
                 }
-            }
-            else
-            {
-                <tr>
-                    <td colspan="9" class="text-center text-muted">لا توجد بيانات لسه.</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 </div>
