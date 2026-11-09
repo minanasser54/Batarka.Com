@@ -1,56 +1,46 @@
-
-
 I Need you to apply this changes 
 
-1. check the redirects of reactions and mark as read
-2. handle the subtraction of item price to not get indivduals balance to -ve instead take from rich students till zeros
-3. add a button to allow admin release a new duplicate to the bought cards or for example release n cards 
-4. make the team removal remove also owned cards info totally donot forbid team removal for card 
-5. add options to admin to remove / modify students and teachers aslo for teachers to edit or modify students 
-
-
-
-build localy and safe run then push
-
+1.
 
 context 
-dotnet path to use 
-Windows PowerShell
-Copyright (C) Microsoft Corporation. All rights reserved.
+PS C:\Users\mina.nasser\Downloads\Batarka.Com> pwd                                
+C:\Users\mina.nasser\Downloads\Batarka.Com
 
+
+PS C:\Users\mina.nasser\Downloads\Batarka.Com> ls                                                                     
+d-----         11/7/2026   7:16 PM                Areas                                                                       
+d-----         11/7/2026   7:16 PM                Controllers                                                                 
+d-----         11/7/2026   7:16 PM                Data                                                                        
+d-----         11/7/2026   7:16 PM                Models                                                                      
+d-----         11/7/2026   7:16 PM                Properties                                                                  
+d-----         11/7/2026   7:16 PM                Services                                                                    
+d-----         11/7/2026   7:16 PM                Views                                                                       
+d-----         11/7/2026   7:16 PM                wwwroot                                                                     
+-a----         11/7/2026   7:16 PM            548 .env.example                                                                
+-a----         11/7/2026   7:16 PM            225 .gitignore                                                                  
+-a----         11/7/2026   7:16 PM            219 appsettings.Development.json                                                
+-a----         11/7/2026   7:16 PM            242 appsettings.json                                                            
+-a----         11/7/2026   7:31 PM          10827 khedma_upload_template.xlsx                                                 
+-a----         11/7/2026   7:16 PM           1403 MyMvcApp10.csproj                                                           
+-a----         11/7/2026   7:30 PM           2221 new.txt                                                                     
+-a----         11/7/2026   7:16 PM           3950 Program.cs                                                                  
+-a----         11/7/2026   7:16 PM           3167 README.md  
+
+
+PS C:\Users\mina.nasser\Downloads> cd .\dotnet-sdk-10.0.107-win-x64\
 PS C:\Users\mina.nasser\Downloads\dotnet-sdk-10.0.107-win-x64> ls
-
-
-    Directory: C:\Users\mina.nasser\Downloads\dotnet-sdk-10.0.107-win-x64
-
-
-Mode                 LastWriteTime         Length Name
-----                 -------------         ------ ----
-d-----        10/14/2026  11:04 AM                host
-d-----        10/15/2026  10:46 AM                metadata
-d-----        10/14/2026  11:05 AM                packs
-d-----        10/14/2026  11:02 AM                sdk
-d-----        10/14/2026  11:05 AM                sdk-manifests
-d-----        10/14/2026  11:04 AM                shared
-d-----        10/14/2026  11:04 AM                templates
--a----        10/14/2026  11:02 AM            178 dnx.cmd
--a----        10/14/2026  11:02 AM         167688 dotnet.exe
--a----        10/14/2026  11:02 AM           9519 LICENSE.txt
--a----        10/14/2026  11:02 AM          78887 ThirdPartyNotices.txt
-
-
-PS C:\Users\mina.nasser\Downloads\dotnet-sdk-10.0.107-win-x64>
-
-
-
-
-pwd 
-PS C:\Users\mina.nasser\Downloads\CH_MVC\MyMvcApp10> pwd
-
-Path
-----
-C:\Users\mina.nasser\Downloads\CH_MVC\MyMvcApp10
-
+Mode                 LastWriteTime         Length Name                                                                        
+----                 -------------         ------ ----                                                                        
+d-----         11/7/2026   7:29 PM                host                                                                        
+d-----         11/7/2026   7:31 PM                packs                                                                       
+d-----         11/7/2026   7:24 PM                sdk                                                                         
+d-----         11/7/2026   7:31 PM                sdk-manifests                                                               
+d-----         11/7/2026   7:29 PM                shared                                                                      
+d-----         11/7/2026   7:29 PM                templates                                                                   
+-a----         11/7/2026   7:24 PM            178 dnx.cmd                                                                     
+-a----         11/7/2026   7:24 PM         167688 dotnet.exe                                                                  
+-a----         11/7/2026   7:24 PM           9519 LICENSE.txt                                                                 
+-a----         11/7/2026   7:24 PM          78887 ThirdPartyNotices.txt                                                       
 
 
 repo to push on 

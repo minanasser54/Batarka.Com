@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 using MyMvcApp10.Data;
 using MyMvcApp10.Models;
+using MyMvcApp10.Api;
 
 var envFile = Path.Combine(Directory.GetCurrentDirectory(), ".env");
 if (File.Exists(envFile))
@@ -68,8 +70,28 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddAuthentication()
+    .AddBearerToken(IdentityConstants.BearerScheme, options =>
+    {
+        options.BearerTokenExpiration = TimeSpan.FromHours(8);
+        options.RefreshTokenExpiration = TimeSpan.FromDays(14);
+    });
+
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<MyMvcApp10.Services.INotificationService, MyMvcApp10.Services.NotificationService>();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Batarka API", Version = "v1" });
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        In = ParameterLocation.Header,
+        Description = "Use the access token returned by POST /api/v1/auth/login."
+    });
+    options.OperationFilter<ApiBearerSecurityOperationFilter>();
+});
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -104,6 +126,14 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseSwagger();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Batarka API v1");
+    options.RoutePrefix = "swagger";
+});
+
+app.MapControllers();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
