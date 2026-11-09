@@ -241,12 +241,41 @@ namespace MyMvcApp10.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("AddressNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApartmentNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AreaCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("BirthDay")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("BirthMonth")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("BirthYear")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Building")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ClassName")
                         .HasMaxLength(120)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConfessionFather")
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
@@ -265,9 +294,17 @@ namespace MyMvcApp10.Data.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("FatherOccupation")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Gender")
+                        .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("GradingBalance")
@@ -286,6 +323,14 @@ namespace MyMvcApp10.Data.Migrations
                     b.Property<bool>("IsTeacher")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Landline")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Landmark")
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("TEXT");
 
@@ -303,8 +348,24 @@ namespace MyMvcApp10.Data.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Mobile2")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MotherName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MotherOccupation")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("NationalId")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -316,6 +377,14 @@ namespace MyMvcApp10.Data.Migrations
 
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Occupation")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OtherServices")
+                        .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordHash")
@@ -337,8 +406,19 @@ namespace MyMvcApp10.Data.Migrations
                     b.Property<int?>("SchoolLevelId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("SchoolOrUniversity")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("TEXT");
+
+                    b.Property<string>("StreetNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("StudyStage")
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("INTEGER");
@@ -1065,12 +1145,12 @@ namespace MyMvcApp10.Data.Migrations
                     b.HasOne("MyMvcApp10.Models.Team", "TargetTeam")
                         .WithMany()
                         .HasForeignKey("TargetTeamId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("MyMvcApp10.Models.ApplicationUser", "TargetUser")
                         .WithMany()
                         .HasForeignKey("TargetUserId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("CreatedBy");
 
@@ -1242,7 +1322,7 @@ namespace MyMvcApp10.Data.Migrations
                     b.HasOne("MyMvcApp10.Models.ApplicationUser", "Student")
                         .WithMany()
                         .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Card");
@@ -1261,7 +1341,7 @@ namespace MyMvcApp10.Data.Migrations
                     b.HasOne("MyMvcApp10.Models.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Card");
@@ -1280,7 +1360,7 @@ namespace MyMvcApp10.Data.Migrations
                     b.HasOne("MyMvcApp10.Models.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Card");
@@ -1304,7 +1384,7 @@ namespace MyMvcApp10.Data.Migrations
                     b.HasOne("MyMvcApp10.Models.ApplicationUser", "Student")
                         .WithMany()
                         .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("MyMvcApp10.Models.Team", "Team")
@@ -1329,7 +1409,7 @@ namespace MyMvcApp10.Data.Migrations
                     b.HasOne("MyMvcApp10.Models.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Notification");

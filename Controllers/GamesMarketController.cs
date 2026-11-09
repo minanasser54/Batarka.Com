@@ -272,9 +272,15 @@ public class GamesMarketController : Controller
     // 3. Teams Dashboard & Leaderboard (Requirement 11) - open to all
     [HttpGet]
     [AllowAnonymous]
-    public async Task<IActionResult> Teams()
+    public async Task<IActionResult> Teams(string? search)
     {
-        var teams = await _db.Teams
+        var query = _db.Teams.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(t => t.Name.Contains(term) || (t.Description != null && t.Description.Contains(term)));
+        }
+        var teams = await query
             .Include(t => t.Members).ThenInclude(m => m.Student)
             .Include(t => t.BoughtCards)
             .ToListAsync();
@@ -295,6 +301,7 @@ public class GamesMarketController : Controller
         .ToList();
 
         ViewBag.Teams = teamViewModels;
+        ViewBag.Search = search;
         return View();
     }
 
@@ -508,9 +515,23 @@ public class GamesMarketController : Controller
     // -------------------------------------------------------------
 
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> ManageCards()
+    public async Task<IActionResult> ManageCards(string? search, int? categoryId, string? status)
     {
-        var cards = await _db.MagicCards
+        var query = _db.MagicCards.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(c => c.Title.Contains(term) || (c.Description != null && c.Description.Contains(term)));
+        }
+        if (categoryId.HasValue) query = query.Where(c => c.CategoryId == categoryId.Value);
+        if (status == "available") query = query.Where(c => !c.IsSold);
+        if (status == "sold") query = query.Where(c => c.IsSold);
+        if (status == "used") query = query.Where(c => c.IsUsed);
+        ViewBag.Categories = await _db.MarketCategories.OrderBy(c => c.Name).ToListAsync();
+        ViewBag.Search = search;
+        ViewBag.CategoryId = categoryId;
+        ViewBag.CardStatus = status;
+        var cards = await query
             .Include(c => c.Category)
             .Include(c => c.BoughtByTeam)
             .OrderByDescending(c => c.CreatedAt)
@@ -767,9 +788,16 @@ public class GamesMarketController : Controller
 
     // Categories Management
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Categories()
+    public async Task<IActionResult> Categories(string? search)
     {
-        var categories = await _db.MarketCategories
+        var query = _db.MarketCategories.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(c => c.Name.Contains(term) || (c.Description != null && c.Description.Contains(term)));
+        }
+        ViewBag.Search = search;
+        var categories = await query
             .Include(c => c.Cards)
             .OrderBy(c => c.Name)
             .ToListAsync();
@@ -827,9 +855,16 @@ public class GamesMarketController : Controller
 
     // Teams Management (Requirement 4 & 10)
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> ManageTeams()
+    public async Task<IActionResult> ManageTeams(string? search)
     {
-        var teams = await _db.Teams
+        var query = _db.Teams.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(t => t.Name.Contains(term) || (t.Description != null && t.Description.Contains(term)));
+        }
+        ViewBag.Search = search;
+        var teams = await query
             .Include(t => t.Members).ThenInclude(m => m.Student)
             .Include(t => t.BoughtCards)
             .OrderByDescending(t => t.CreatedAt)

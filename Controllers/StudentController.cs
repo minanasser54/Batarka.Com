@@ -133,15 +133,24 @@ public class StudentController : Controller
         return View(targetUser);
     }
 
-    public async Task<IActionResult> Leaderboard()
+    public async Task<IActionResult> Leaderboard(string? search, int? schoolLevelId)
     {
-        var leaderboard = await _db.Users
-            .Where(u => u.IsActive && !u.IsAdmin && !u.IsTeacher)
+        var query = _db.Users.Where(u => u.IsActive && !u.IsAdmin && !u.IsTeacher);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(u => u.FullName.Contains(term) || (u.ClassName != null && u.ClassName.Contains(term)));
+        }
+        if (schoolLevelId.HasValue) query = query.Where(u => u.SchoolLevelId == schoolLevelId.Value);
+        var leaderboard = await query
             .OrderByDescending(u => u.GradingBalance)
             .ThenBy(u => u.CreatedAt)
             .Take(10)
             .ToListAsync();
 
+        ViewBag.Search = search;
+        ViewBag.SchoolLevelId = schoolLevelId;
+        ViewBag.Levels = await _db.SchoolLevels.OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToListAsync();
         return View(leaderboard);
     }
 

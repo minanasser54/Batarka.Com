@@ -24,7 +24,7 @@ public class NotificationsController : Controller
 
     // 1. User Notifications Inbox
     [HttpGet]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? search, string? status)
     {
         var current = await GetCurrentUserAsync();
         if (current == null) return RedirectToAction("Login", "Account");
@@ -53,7 +53,17 @@ public class NotificationsController : Controller
             .Select(r => r.NotificationId)
             .ToListAsync();
 
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            notifications = notifications.Where(n => n.Title.Contains(term) || n.Message.Contains(term)).ToList();
+        }
+        if (status == "unread") notifications = notifications.Where(n => !readNotificationIds.Contains(n.Id)).ToList();
+        if (status == "read") notifications = notifications.Where(n => readNotificationIds.Contains(n.Id)).ToList();
+
         ViewBag.ReadIds = readNotificationIds;
+        ViewBag.Search = search;
+        ViewBag.NotificationStatus = status;
         return View(notifications);
     }
 
@@ -179,9 +189,18 @@ public class NotificationsController : Controller
     // -------------------------------------------------------------
 
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Manage()
+    public async Task<IActionResult> Manage(string? search, string? targetType)
     {
-        var notifications = await _db.AppNotifications
+        var query = _db.AppNotifications.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(n => n.Title.Contains(term) || n.Message.Contains(term));
+        }
+        if (!string.IsNullOrWhiteSpace(targetType)) query = query.Where(n => n.TargetType == targetType);
+        ViewBag.Search = search;
+        ViewBag.TargetType = targetType;
+        var notifications = await query
             .Include(n => n.CreatedBy)
             .Include(n => n.TargetUser)
             .Include(n => n.TargetTeam)

@@ -20,6 +20,11 @@
     <div class="col-md-3"><button class="btn btn-success w-100" type="submit">إضافة مرحلة</button></div>
 </form>
 
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-6"><label class="form-label">بحث عن مرحلة</label><input name="search" value="@ViewBag.Search" class="form-control" /></div>
+    <div class="col-auto d-flex gap-2"><button type="submit" class="btn btn-primary">تصفية</button><a asp-action="Levels" class="btn btn-outline-secondary">مسح</a></div>
+</form>
+
 <div class="table-responsive">
     <table class="table table-striped align-middle">
         <thead><tr><th>المرحلة</th><th>عدد الفصول</th><th>إجراءات</th></tr></thead>

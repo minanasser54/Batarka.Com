@@ -85,6 +85,7 @@
                     <th>الرصيد</th>
                     <th>الحضور</th>
                     <th>ملاحظات</th>
+                    <th>البيانات الكاملة</th>
                     <th>الحالة</th>
                     <th>إجراءات</th>
                 </tr>
@@ -168,6 +169,33 @@
                                 }
                             </td>
                             <td>
+                                <details>
+                                    <summary class="text-primary">عرض البيانات</summary>
+                                    <dl class="row small mt-2 mb-0" style="min-width: 280px">
+                                        <dt class="col-5">رقم الشارع</dt><dd class="col-7">@(item.StreetNumber ?? "—")</dd>
+                                        <dt class="col-5">رقم الشقة</dt><dd class="col-7">@(item.ApartmentNumber ?? "—")</dd>
+                                        <dt class="col-5">العمارة</dt><dd class="col-7">@(item.Building ?? "—")</dd>
+                                        <dt class="col-5">علامة مميزة</dt><dd class="col-7">@(item.Landmark ?? "—")</dd>
+                                        <dt class="col-5">ملاحظات العنوان</dt><dd class="col-7">@(item.AddressNotes ?? "—")</dd>
+                                        <dt class="col-5">التليفون الأرضي</dt><dd class="col-7">@(item.Landline ?? "—")</dd>
+                                        <dt class="col-5">موبايل 2</dt><dd class="col-7">@(item.Mobile2 ?? "—")</dd>
+                                        <dt class="col-5">الميلاد</dt><dd class="col-7">@string.Join("/", new[] { item.BirthDay?.ToString(), item.BirthMonth?.ToString(), item.BirthYear?.ToString() }.Where(value => value != null))</dd>
+                                        <dt class="col-5">أب الاعتراف</dt><dd class="col-7">@(item.ConfessionFather ?? "—")</dd>
+                                        <dt class="col-5">المرحلة الدراسية</dt><dd class="col-7">@(item.StudyStage?.ToString() ?? "—")</dd>
+                                        <dt class="col-5">المدرسة / الجامعة</dt><dd class="col-7">@(item.SchoolOrUniversity ?? "—")</dd>
+                                        <dt class="col-5">النوع</dt><dd class="col-7">@(item.Gender ?? "—")</dd>
+                                        <dt class="col-5">المهنة</dt><dd class="col-7">@(item.Occupation ?? "—")</dd>
+                                        <dt class="col-5">مهنة الأب</dt><dd class="col-7">@(item.FatherOccupation ?? "—")</dd>
+                                        <dt class="col-5">مهنة الأم</dt><dd class="col-7">@(item.MotherOccupation ?? "—")</dd>
+                                        <dt class="col-5">اسم الأم</dt><dd class="col-7">@(item.MotherName ?? "—")</dd>
+                                        <dt class="col-5">خدمات أخرى</dt><dd class="col-7">@(item.OtherServices ?? "—")</dd>
+                                        <dt class="col-5">الرقم القومي</dt><dd class="col-7">@(item.NationalId ?? "—")</dd>
+                                        <dt class="col-5">رابط الصورة</dt><dd class="col-7">@(item.ImageUrl ?? "—")</dd>
+                                        <dt class="col-5">كود المنطقة</dt><dd class="col-7">@(item.AreaCode ?? "—")</dd>
+                                    </dl>
+                                </details>
+                            </td>
+                            <td>
                                 <span class="badge @(item.IsActive ? "bg-success" : "bg-danger")">@(item.IsActive ? "نشط" : "متوقف")</span>
                             </td>
                             <td>
@@ -191,7 +219,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="11" class="text-center text-muted py-4">
+                        <td colspan="12" class="text-center text-muted py-4">
                             لا توجد بيانات مطابقة لخيارات البحث المحددة.
                         </td>
                     </tr>

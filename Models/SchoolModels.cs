@@ -35,6 +35,64 @@ public class ApplicationUser : IdentityUser
     [MaxLength(500)]
     public string? Address { get; set; }
 
+    [MaxLength(100)]
+    public string? StreetNumber { get; set; }
+
+    [MaxLength(50)]
+    public string? ApartmentNumber { get; set; }
+
+    [MaxLength(100)]
+    public string? Building { get; set; }
+
+    [MaxLength(300)]
+    public string? Landmark { get; set; }
+
+    [MaxLength(1000)]
+    public string? AddressNotes { get; set; }
+
+    [MaxLength(30)]
+    public string? Landline { get; set; }
+
+    [MaxLength(30)]
+    public string? Mobile2 { get; set; }
+
+    public int? BirthDay { get; set; }
+    public int? BirthMonth { get; set; }
+    public int? BirthYear { get; set; }
+
+    [MaxLength(200)]
+    public string? ConfessionFather { get; set; }
+
+    [Range(0, 9)]
+    public int? StudyStage { get; set; }
+
+    [MaxLength(200)]
+    public string? SchoolOrUniversity { get; set; }
+
+    [MaxLength(30)]
+    public string? Gender { get; set; }
+
+    [MaxLength(200)]
+    public string? Occupation { get; set; }
+
+    [MaxLength(200)]
+    public string? FatherOccupation { get; set; }
+
+    [MaxLength(200)]
+    public string? MotherOccupation { get; set; }
+
+    [MaxLength(200)]
+    public string? MotherName { get; set; }
+
+    [MaxLength(1000)]
+    public string? OtherServices { get; set; }
+
+    [MaxLength(30)]
+    public string? NationalId { get; set; }
+
+    [MaxLength(50)]
+    public string? AreaCode { get; set; }
+
     [MaxLength(200)]
     public string? QrCodeValue { get; set; }
 
@@ -312,6 +370,32 @@ public class RegisterViewModel
     [Display(Name = "المرحلة")]
     public int? SchoolLevelId { get; set; }
 
+    public string? StreetNumber { get; set; }
+    public string? Address { get; set; }
+    public string? ApartmentNumber { get; set; }
+    public string? Building { get; set; }
+    public string? Landmark { get; set; }
+    public string? AddressNotes { get; set; }
+    public string? Landline { get; set; }
+    public string? Mobile { get; set; }
+    public string? Mobile2 { get; set; }
+    public int? BirthDay { get; set; }
+    public int? BirthMonth { get; set; }
+    public int? BirthYear { get; set; }
+    public string? ConfessionFather { get; set; }
+    public int? StudyStage { get; set; }
+    public string? SchoolOrUniversity { get; set; }
+    public string? Gender { get; set; }
+    public string? Occupation { get; set; }
+    public string? FatherOccupation { get; set; }
+    public string? MotherOccupation { get; set; }
+    public string? MotherName { get; set; }
+    public string? OtherServices { get; set; }
+    public string? NationalId { get; set; }
+    public string? ImageUrl { get; set; }
+    public string? Notes { get; set; }
+    public string? AreaCode { get; set; }
+
     public bool IsTeacher { get; set; }
     public bool IsAdmin { get; set; }
     public bool IsActive { get; set; } = true;
@@ -319,13 +403,17 @@ public class RegisterViewModel
 
 public class BulkStudentImportViewModel
 {
-    [Required(ErrorMessage = "اختار الفصل")]
     [Display(Name = "الفصل")]
-    public int SchoolClassId { get; set; }
+    public int? SchoolClassId { get; set; }
 
-    [Required(ErrorMessage = "اكتب بيانات المخدومين")]
-    [Display(Name = "بيانات المخدومين")]
+    [Display(Name = "استيراد خدام")]
+    public bool ImportTeachers { get; set; }
+
+    [Display(Name = "بيانات CSV")]
     public string Rows { get; set; } = string.Empty;
+
+    [Display(Name = "ملف CSV")]
+    public Microsoft.AspNetCore.Http.IFormFile? CsvFile { get; set; }
 }
 
 public class ResetPasswordViewModel
@@ -400,6 +488,29 @@ public class EditUserViewModel
     [Display(Name = "ملاحظات")]
     public string? Notes { get; set; }
 
+    public string? StreetNumber { get; set; }
+    public string? ApartmentNumber { get; set; }
+    public string? Building { get; set; }
+    public string? Landmark { get; set; }
+    public string? AddressNotes { get; set; }
+    public string? Landline { get; set; }
+    public string? Mobile2 { get; set; }
+    public int? BirthDay { get; set; }
+    public int? BirthMonth { get; set; }
+    public int? BirthYear { get; set; }
+    public string? ConfessionFather { get; set; }
+    public int? StudyStage { get; set; }
+    public string? SchoolOrUniversity { get; set; }
+    public string? Gender { get; set; }
+    public string? Occupation { get; set; }
+    public string? FatherOccupation { get; set; }
+    public string? MotherOccupation { get; set; }
+    public string? MotherName { get; set; }
+    public string? OtherServices { get; set; }
+    public string? NationalId { get; set; }
+    public string? ImageUrl { get; set; }
+    public string? AreaCode { get; set; }
+
     [Display(Name = "الفصل")]
     public int? SchoolClassId { get; set; }
 
@@ -427,7 +538,29 @@ public class AdminStudentListItemViewModel
     public string UserName { get; set; } = string.Empty;
     public string? Email { get; set; }
     public string? Mobile { get; set; }
+    public string? Mobile2 { get; set; }
+    public string? Landline { get; set; }
     public string? Address { get; set; }
+    public string? StreetNumber { get; set; }
+    public string? ApartmentNumber { get; set; }
+    public string? Building { get; set; }
+    public string? Landmark { get; set; }
+    public string? AddressNotes { get; set; }
+    public int? BirthDay { get; set; }
+    public int? BirthMonth { get; set; }
+    public int? BirthYear { get; set; }
+    public string? ConfessionFather { get; set; }
+    public int? StudyStage { get; set; }
+    public string? SchoolOrUniversity { get; set; }
+    public string? Gender { get; set; }
+    public string? Occupation { get; set; }
+    public string? FatherOccupation { get; set; }
+    public string? MotherOccupation { get; set; }
+    public string? MotherName { get; set; }
+    public string? OtherServices { get; set; }
+    public string? NationalId { get; set; }
+    public string? ImageUrl { get; set; }
+    public string? AreaCode { get; set; }
     public string? Notes { get; set; }
     public string? ClassName { get; set; }
     public string? Level { get; set; }
@@ -435,8 +568,10 @@ public class AdminStudentListItemViewModel
     public int GradingBalance { get; set; }
     public int TotalAttendance { get; set; }
     public bool IsActive { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public string? TeamName { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    public string? TeamName { get; set; }
+
 }
 
 public class AttendancePageViewModel

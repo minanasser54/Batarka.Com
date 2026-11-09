@@ -1,18 +1,18 @@
 @model MyMvcApp10.Models.BulkStudentImportViewModel
 @{
-    ViewData["Title"] = "إضافة أو تعطيل مخدومين";
+    ViewData["Title"] = "استيراد المستخدمين";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>إدارة جماعية للمخدومين</h2>
+    <h2>استيراد المستخدمين</h2>
     <a asp-action="Students" class="btn btn-outline-secondary">إدارة المخدومين</a>
 </div>
 
 <form method="get" class="row g-2 align-items-end mb-3">
     <div class="col-md-6">
         <label class="form-label" for="classFilter">الفصل</label>
-        <select id="classFilter" name="schoolClassId" class="form-select" required>
-            <option value="">اختار الفصل</option>
+        <select id="classFilter" name="schoolClassId" class="form-select">
+            <option value="">بدون فصل</option>
             @foreach (var schoolClass in ViewBag.Classes)
             {
                 <option value="@schoolClass.Id" selected="@(ViewBag.SelectedClassId == schoolClass.Id)">@schoolClass.SchoolLevel.Name - @schoolClass.Name</option>
@@ -23,17 +23,39 @@
 </form>
 
 <section class="border rounded p-3 mb-4">
-    <h4>إضافة مجموعة للفصل</h4>
-    <p class="text-muted">كل سطر: الاسم، اسم المستخدم، كلمة المرور، الموبايل اختياري، البريد اختياري. استخدم CSV، وحط النصوص اللي فيها فاصلة بين علامتي اقتباس.</p>
-    <form asp-action="ImportStudents" method="post">
+    <h4>استيراد من CSV</h4>
+    <p class="text-muted">الصف الأول للعناوين. الأعمدة الاختيارية تطابق أسماء الحقول العربية أدناه. اسم المستخدم وكلمة المرور اختياريان؛ عند غيابهما ينشأ اسم مستخدم عشوائي وتحتاج الإدارة لتعيين كلمة مرور. الحقول النصية التي تحتوي على فاصلة توضع بين علامتي اقتباس.</p>
+    <form asp-action="ImportStudents" method="post" enctype="multipart/form-data">
         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-        <input asp-for="SchoolClassId" type="hidden" />
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label asp-for="SchoolClassId" class="form-label">الفصل (اختياري)</label>
+                <select asp-for="SchoolClassId" class="form-select">
+                    <option value="">بدون فصل</option>
+                    @foreach (var schoolClass in ViewBag.Classes)
+                    {
+                        <option value="@schoolClass.Id">@schoolClass.SchoolLevel.Name - @schoolClass.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <div class="form-check">
+                    <input asp-for="ImportTeachers" class="form-check-input" />
+                    <label asp-for="ImportTeachers" class="form-check-label">استيراد قائمة خدام</label>
+                </div>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label asp-for="CsvFile" class="form-label">رفع ملف CSV (اختياري)</label>
+            <input asp-for="CsvFile" type="file" accept=".csv,text/csv" class="form-control" />
+            <span asp-validation-for="CsvFile" class="text-danger"></span>
+        </div>
         <div class="mb-3">
             <label asp-for="Rows" class="form-label"></label>
-            <textarea asp-for="Rows" class="form-control" rows="7" dir="ltr" placeholder="Full Name,username,TempPass123,mobile,email"></textarea>
+            <textarea asp-for="Rows" class="form-control" rows="8" dir="auto" placeholder="الاسم,رقم الشارع,العنوان,رقم الشقة,العمارة,علامة مميزة,ملاحظات العنوان,التليفون الأرضي,موبايل 1,موبايل 2,يوم الميلاد,شهر الميلاد,سنة الميلاد,أب الاعتراف,المرحلة الدراسية (0-9),المدرسة / الجامعة,النوع (ولد / بنت),المهنة,مهنة الأب,مهنة الأم,اسم الأم,خدمات أخرى,الرقم القومي,رابط الصورة الشخصية,ملاحظات,كود المنطقة"></textarea>
             <span asp-validation-for="Rows" class="text-danger"></span>
         </div>
-        <button class="btn btn-success" type="submit">استيراد المخدومين</button>
+        <button class="btn btn-success" type="submit">استيراد البيانات</button>
     </form>
     @if (ViewBag.ImportErrors is IEnumerable<string> errors)
     {

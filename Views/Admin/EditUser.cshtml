@@ -28,6 +28,28 @@
                     <label asp-for="Address" class="form-label"></label>
                     <input asp-for="Address" class="form-control" />
                 </div>
+                <div class="col-md-3"><label class="form-label">رقم الشارع</label><input asp-for="StreetNumber" class="form-control" /></div>
+                <div class="col-md-3"><label class="form-label">رقم الشقة</label><input asp-for="ApartmentNumber" class="form-control" /></div>
+                <div class="col-md-3"><label class="form-label">العمارة</label><input asp-for="Building" class="form-control" /></div>
+                <div class="col-md-3"><label class="form-label">كود المنطقة</label><input asp-for="AreaCode" class="form-control" /></div>
+                <div class="col-md-6"><label class="form-label">علامة مميزة</label><input asp-for="Landmark" class="form-control" /></div>
+                <div class="col-md-6"><label class="form-label">ملاحظات العنوان</label><input asp-for="AddressNotes" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">التليفون الأرضي</label><input asp-for="Landline" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">موبايل 2</label><input asp-for="Mobile2" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">يوم الميلاد</label><input asp-for="BirthDay" type="number" min="1" max="31" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">شهر الميلاد</label><input asp-for="BirthMonth" type="number" min="1" max="12" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">سنة الميلاد</label><input asp-for="BirthYear" type="number" min="1900" max="2100" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">أب الاعتراف</label><input asp-for="ConfessionFather" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">المرحلة الدراسية (0-9)</label><input asp-for="StudyStage" type="number" min="0" max="9" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">المدرسة / الجامعة</label><input asp-for="SchoolOrUniversity" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">النوع (ولد / بنت)</label><select asp-for="Gender" class="form-select"><option value="">غير محدد</option><option>ولد</option><option>بنت</option></select></div>
+                <div class="col-md-4"><label class="form-label">المهنة</label><input asp-for="Occupation" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">مهنة الأب</label><input asp-for="FatherOccupation" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">مهنة الأم</label><input asp-for="MotherOccupation" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">اسم الأم</label><input asp-for="MotherName" class="form-control" /></div>
+                <div class="col-md-6"><label class="form-label">خدمات أخرى</label><input asp-for="OtherServices" class="form-control" /></div>
+                <div class="col-md-6"><label class="form-label">الرقم القومي</label><input asp-for="NationalId" class="form-control" /></div>
+                <div class="col-12"><label class="form-label">رابط الصورة الشخصية</label><input asp-for="ImageUrl" class="form-control" /></div>
                 <div class="col-md-6">
                     <label asp-for="SchoolClassId" class="form-label"></label>
                     <select asp-for="SchoolClassId" class="form-select">

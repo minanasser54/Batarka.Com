@@ -94,7 +94,29 @@ public class AdminController : Controller
                 UserName = u.UserName ?? string.Empty,
                 Email = u.Email,
                 Mobile = u.Mobile,
+                Mobile2 = u.Mobile2,
+                Landline = u.Landline,
                 Address = u.Address,
+                StreetNumber = u.StreetNumber,
+                ApartmentNumber = u.ApartmentNumber,
+                Building = u.Building,
+                Landmark = u.Landmark,
+                AddressNotes = u.AddressNotes,
+                BirthDay = u.BirthDay,
+                BirthMonth = u.BirthMonth,
+                BirthYear = u.BirthYear,
+                ConfessionFather = u.ConfessionFather,
+                StudyStage = u.StudyStage,
+                SchoolOrUniversity = u.SchoolOrUniversity,
+                Gender = u.Gender,
+                Occupation = u.Occupation,
+                FatherOccupation = u.FatherOccupation,
+                MotherOccupation = u.MotherOccupation,
+                MotherName = u.MotherName,
+                OtherServices = u.OtherServices,
+                NationalId = u.NationalId,
+                ImageUrl = u.ImageUrl,
+                AreaCode = u.AreaCode,
                 Notes = u.Notes,
                 ClassName = u.SchoolClass != null ? u.SchoolClass.Name : u.ClassName,
                 Level = u.SchoolLevel != null ? u.SchoolLevel.Name : u.Level,
@@ -163,8 +185,31 @@ public class AdminController : Controller
             {
                 u.FullName,
                 UserName = u.UserName ?? string.Empty,
-                u.Mobile,
+                u.Email,
+                u.StreetNumber,
                 u.Address,
+                u.ApartmentNumber,
+                u.Building,
+                u.Landmark,
+                u.AddressNotes,
+                u.Landline,
+                u.Mobile,
+                u.Mobile2,
+                u.BirthDay,
+                u.BirthMonth,
+                u.BirthYear,
+                u.ConfessionFather,
+                u.StudyStage,
+                u.SchoolOrUniversity,
+                u.Gender,
+                u.Occupation,
+                u.FatherOccupation,
+                u.MotherOccupation,
+                u.MotherName,
+                u.OtherServices,
+                u.NationalId,
+                u.ImageUrl,
+                u.AreaCode,
                 ClassName = u.SchoolClass != null ? u.SchoolClass.Name : u.ClassName,
                 Level = u.SchoolLevel != null ? u.SchoolLevel.Name : u.Level,
                 u.GradingBalance,
@@ -177,21 +222,44 @@ public class AdminController : Controller
             .ToListAsync();
 
         var csv = new StringBuilder();
-        csv.AppendLine("الاسم,اسم المستخدم,رقم الموبايل,العنوان,المرحلة,الفصل,الفريق,الرصيد,مرات الحضور,ملاحظات,الحالة,تاريخ التسجيل");
+        csv.AppendLine("الاسم,اسم المستخدم,البريد,رقم الشارع,العنوان,رقم الشقة,العمارة,علامة مميزة,ملاحظات العنوان,التليفون الأرضي,موبايل 1,موبايل 2,يوم الميلاد,شهر الميلاد,سنة الميلاد,أب الاعتراف,المرحلة الدراسية (0-9),المدرسة / الجامعة,النوع (ولد / بنت),المهنة,مهنة الأب,مهنة الأم,اسم الأم,خدمات أخرى,الرقم القومي,رابط الصورة الشخصية,ملاحظات,كود المنطقة,المرحلة,الفصل,الفريق,الرصيد,مرات الحضور,الحالة,تاريخ التسجيل");
         foreach (var item in list)
         {
             csv.AppendLine(string.Join(',', new[]
             {
                 CsvEscape(item.FullName),
                 CsvEscape(item.UserName),
-                CsvEscape(item.Mobile),
+                CsvEscape(item.Email),
+                CsvEscape(item.StreetNumber),
                 CsvEscape(item.Address),
+                CsvEscape(item.ApartmentNumber),
+                CsvEscape(item.Building),
+                CsvEscape(item.Landmark),
+                CsvEscape(item.AddressNotes),
+                CsvEscape(item.Landline),
+                CsvEscape(item.Mobile),
+                CsvEscape(item.Mobile2),
+                CsvEscape(item.BirthDay?.ToString()),
+                CsvEscape(item.BirthMonth?.ToString()),
+                CsvEscape(item.BirthYear?.ToString()),
+                CsvEscape(item.ConfessionFather),
+                CsvEscape(item.StudyStage?.ToString()),
+                CsvEscape(item.SchoolOrUniversity),
+                CsvEscape(item.Gender),
+                CsvEscape(item.Occupation),
+                CsvEscape(item.FatherOccupation),
+                CsvEscape(item.MotherOccupation),
+                CsvEscape(item.MotherName),
+                CsvEscape(item.OtherServices),
+                CsvEscape(item.NationalId),
+                CsvEscape(item.ImageUrl),
+                CsvEscape(item.Notes),
+                CsvEscape(item.AreaCode),
                 CsvEscape(item.Level),
                 CsvEscape(item.ClassName),
                 CsvEscape(item.TeamName),
                 item.GradingBalance.ToString(),
                 item.TotalAttendance.ToString(),
-                CsvEscape(item.Notes),
                 item.IsActive ? "نشط" : "متوقف",
                 item.CreatedAt.ToString("yyyy-MM-dd")
             }));
@@ -205,6 +273,30 @@ public class AdminController : Controller
     {
         var escaped = (value ?? string.Empty).Replace("\"", "\"\"");
         return $"\"{escaped}\"";
+    }
+
+    private static string NormalizeCsvHeader(string? header)
+    {
+        return (header ?? string.Empty).Trim().TrimStart('\uFEFF').Replace(" ", string.Empty).Replace("ـ", string.Empty).ToLowerInvariant();
+    }
+
+    private static string? CsvValue(IReadOnlyDictionary<string, int> headerMap, string[] fields, params string[] aliases)
+    {
+        foreach (var alias in aliases)
+        {
+            if (headerMap.TryGetValue(NormalizeCsvHeader(alias), out var index) && index < fields.Length)
+            {
+                var value = fields[index]?.Trim();
+                return string.IsNullOrEmpty(value) ? null : value;
+            }
+        }
+
+        return null;
+    }
+
+    private static int? ParseNullableInt(string? value)
+    {
+        return int.TryParse(value, out var parsed) ? parsed : null;
     }
 
     [HttpGet]
@@ -241,7 +333,29 @@ public class AdminController : Controller
                 UserName = u.UserName ?? string.Empty,
                 Email = u.Email,
                 Mobile = u.Mobile,
+                Mobile2 = u.Mobile2,
+                Landline = u.Landline,
                 Address = u.Address,
+                StreetNumber = u.StreetNumber,
+                ApartmentNumber = u.ApartmentNumber,
+                Building = u.Building,
+                Landmark = u.Landmark,
+                AddressNotes = u.AddressNotes,
+                BirthDay = u.BirthDay,
+                BirthMonth = u.BirthMonth,
+                BirthYear = u.BirthYear,
+                ConfessionFather = u.ConfessionFather,
+                StudyStage = u.StudyStage,
+                SchoolOrUniversity = u.SchoolOrUniversity,
+                Gender = u.Gender,
+                Occupation = u.Occupation,
+                FatherOccupation = u.FatherOccupation,
+                MotherOccupation = u.MotherOccupation,
+                MotherName = u.MotherName,
+                OtherServices = u.OtherServices,
+                NationalId = u.NationalId,
+                ImageUrl = u.ImageUrl,
+                AreaCode = u.AreaCode,
                 Notes = u.Notes,
                 ClassName = u.SchoolClass != null ? u.SchoolClass.Name : u.ClassName,
                 Level = u.SchoolLevel != null ? u.SchoolLevel.Name : u.Level,
@@ -283,15 +397,26 @@ public class AdminController : Controller
     }
 
 
-    public async Task<IActionResult> Teachers()
+    public async Task<IActionResult> Teachers(string? search, string? activeStatus, string? accountType)
     {
         if (!await IsAdminAsync())
         {
             return Forbid();
         }
 
-        var teachers = await _db.Users
-            .Where(u => (u.IsTeacher || u.IsAdmin) && u.DeletedAt == null)
+        var query = _db.Users.Where(u => (u.IsTeacher || u.IsAdmin) && u.DeletedAt == null);
+        if (activeStatus == "active") query = query.Where(u => u.IsActive);
+        if (activeStatus == "inactive") query = query.Where(u => !u.IsActive);
+        if (accountType == "teacher") query = query.Where(u => u.IsTeacher && !u.IsAdmin);
+        if (accountType == "admin") query = query.Where(u => u.IsAdmin);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(u => u.FullName.Contains(term) || (u.UserName != null && u.UserName.Contains(term))
+                || (u.Mobile != null && u.Mobile.Contains(term)));
+        }
+
+        var teachers = await query
             .OrderByDescending(u => u.LastLoginAt)
             .Select(u => new
             {
@@ -308,6 +433,9 @@ public class AdminController : Controller
             })
             .ToListAsync();
 
+        ViewBag.Search = search;
+        ViewBag.ActiveStatus = activeStatus;
+        ViewBag.AccountType = accountType;
         return View(teachers);
     }
 
@@ -361,6 +489,31 @@ public class AdminController : Controller
             UserName = model.UserName,
             Email = model.UserName,
             FullName = model.FullName,
+            StreetNumber = model.StreetNumber?.Trim(),
+            Address = model.Address?.Trim(),
+            ApartmentNumber = model.ApartmentNumber?.Trim(),
+            Building = model.Building?.Trim(),
+            Landmark = model.Landmark?.Trim(),
+            AddressNotes = model.AddressNotes?.Trim(),
+            Landline = model.Landline?.Trim(),
+            Mobile = model.Mobile?.Trim(),
+            Mobile2 = model.Mobile2?.Trim(),
+            BirthDay = model.BirthDay,
+            BirthMonth = model.BirthMonth,
+            BirthYear = model.BirthYear,
+            ConfessionFather = model.ConfessionFather?.Trim(),
+            StudyStage = model.StudyStage,
+            SchoolOrUniversity = model.SchoolOrUniversity?.Trim(),
+            Gender = model.Gender?.Trim(),
+            Occupation = model.Occupation?.Trim(),
+            FatherOccupation = model.FatherOccupation?.Trim(),
+            MotherOccupation = model.MotherOccupation?.Trim(),
+            MotherName = model.MotherName?.Trim(),
+            OtherServices = model.OtherServices?.Trim(),
+            NationalId = model.NationalId?.Trim(),
+            ImageUrl = model.ImageUrl?.Trim(),
+            Notes = model.Notes?.Trim(),
+            AreaCode = model.AreaCode?.Trim(),
             SchoolClassId = schoolClass?.Id,
             ClassName = schoolClass?.Name,
             SchoolLevelId = schoolClass?.SchoolLevelId,
@@ -429,6 +582,28 @@ public class AdminController : Controller
             UserName = user.UserName ?? string.Empty,
             Mobile = user.Mobile,
             Address = user.Address,
+            StreetNumber = user.StreetNumber,
+            ApartmentNumber = user.ApartmentNumber,
+            Building = user.Building,
+            Landmark = user.Landmark,
+            AddressNotes = user.AddressNotes,
+            Landline = user.Landline,
+            Mobile2 = user.Mobile2,
+            BirthDay = user.BirthDay,
+            BirthMonth = user.BirthMonth,
+            BirthYear = user.BirthYear,
+            ConfessionFather = user.ConfessionFather,
+            StudyStage = user.StudyStage,
+            SchoolOrUniversity = user.SchoolOrUniversity,
+            Gender = user.Gender,
+            Occupation = user.Occupation,
+            FatherOccupation = user.FatherOccupation,
+            MotherOccupation = user.MotherOccupation,
+            MotherName = user.MotherName,
+            OtherServices = user.OtherServices,
+            NationalId = user.NationalId,
+            ImageUrl = user.ImageUrl,
+            AreaCode = user.AreaCode,
             Notes = user.Notes,
             SchoolClassId = user.SchoolClassId,
             SchoolLevelId = user.SchoolClassId.HasValue ? user.SchoolLevelId : null,
@@ -482,6 +657,28 @@ public class AdminController : Controller
         user.Email = model.UserName.Trim();
         user.Mobile = model.Mobile?.Trim();
         user.Address = model.Address?.Trim();
+        user.StreetNumber = model.StreetNumber?.Trim();
+        user.ApartmentNumber = model.ApartmentNumber?.Trim();
+        user.Building = model.Building?.Trim();
+        user.Landmark = model.Landmark?.Trim();
+        user.AddressNotes = model.AddressNotes?.Trim();
+        user.Landline = model.Landline?.Trim();
+        user.Mobile2 = model.Mobile2?.Trim();
+        user.BirthDay = model.BirthDay;
+        user.BirthMonth = model.BirthMonth;
+        user.BirthYear = model.BirthYear;
+        user.ConfessionFather = model.ConfessionFather?.Trim();
+        user.StudyStage = model.StudyStage;
+        user.SchoolOrUniversity = model.SchoolOrUniversity?.Trim();
+        user.Gender = model.Gender?.Trim();
+        user.Occupation = model.Occupation?.Trim();
+        user.FatherOccupation = model.FatherOccupation?.Trim();
+        user.MotherOccupation = model.MotherOccupation?.Trim();
+        user.MotherName = model.MotherName?.Trim();
+        user.OtherServices = model.OtherServices?.Trim();
+        user.NationalId = model.NationalId?.Trim();
+        user.ImageUrl = model.ImageUrl?.Trim();
+        user.AreaCode = model.AreaCode?.Trim();
         user.Notes = model.Notes?.Trim();
         user.SchoolClassId = schoolClass?.Id;
         user.ClassName = schoolClass?.Name;
@@ -649,11 +846,21 @@ public class AdminController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Questions()
+    public async Task<IActionResult> Questions(string? search, string? status)
     {
         if (!await IsAdminAsync()) return Forbid();
         ViewBag.AttendancePoints = await GetAttendancePointsAsync();
-        return View(await _db.AttendanceQuestionDefinitions.OrderBy(x => x.SortOrder).ToListAsync());
+        var query = _db.AttendanceQuestionDefinitions.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(x => x.Code.Contains(term) || x.DisplayText.Contains(term));
+        }
+        if (status == "enabled") query = query.Where(x => x.IsEnabled);
+        if (status == "disabled") query = query.Where(x => !x.IsEnabled);
+        ViewBag.Search = search;
+        ViewBag.QuestionStatus = status;
+        return View(await query.OrderBy(x => x.SortOrder).ToListAsync());
     }
 
     [HttpPost]
@@ -757,7 +964,7 @@ public class AdminController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> BulkStudents(int? schoolClassId)
+    public async Task<IActionResult> BulkStudents(int? schoolClassId, bool importTeachers = false)
     {
         if (!await IsAdminAsync()) return Forbid();
         await LoadSchoolOptionsAsync();
@@ -765,7 +972,7 @@ public class AdminController : Controller
         ViewBag.ClassStudents = schoolClassId.HasValue
             ? await _db.Users.Where(x => x.SchoolClassId == schoolClassId && !x.IsTeacher && !x.IsAdmin).OrderBy(x => x.FullName).ToListAsync()
             : new List<ApplicationUser>();
-        return View(new BulkStudentImportViewModel { SchoolClassId = schoolClassId ?? 0 });
+        return View(new BulkStudentImportViewModel { SchoolClassId = schoolClassId, ImportTeachers = importTeachers });
     }
 
     [HttpPost]
@@ -774,8 +981,22 @@ public class AdminController : Controller
     {
         var actor = await GetCurrentUserAsync();
         if (actor == null || !actor.IsAdmin) return Forbid();
-        var schoolClass = await _db.SchoolClasses.Include(x => x.SchoolLevel).FirstOrDefaultAsync(x => x.Id == model.SchoolClassId);
-        if (schoolClass == null) ModelState.AddModelError(nameof(model.SchoolClassId), "الفصل المختار مش موجود.");
+        if (model.CsvFile is { Length: > 10_485_760 })
+        {
+            ModelState.AddModelError(nameof(model.CsvFile), "حجم ملف CSV لازم يكون أقل من 10 ميجابايت.");
+        }
+        if (model.CsvFile != null && !string.Equals(Path.GetExtension(model.CsvFile.FileName), ".csv", StringComparison.OrdinalIgnoreCase))
+        {
+            ModelState.AddModelError(nameof(model.CsvFile), "ارفع ملف CSV فقط.");
+        }
+        if (model.CsvFile == null && string.IsNullOrWhiteSpace(model.Rows))
+        {
+            ModelState.AddModelError(nameof(model.Rows), "ارفع ملف CSV أو الصق محتواه.");
+        }
+        var schoolClass = model.SchoolClassId.HasValue
+            ? await _db.SchoolClasses.Include(x => x.SchoolLevel).FirstOrDefaultAsync(x => x.Id == model.SchoolClassId.Value)
+            : null;
+        if (model.SchoolClassId.HasValue && schoolClass == null) ModelState.AddModelError(nameof(model.SchoolClassId), "الفصل المختار مش موجود.");
         if (!ModelState.IsValid)
         {
             await LoadBulkStudentsViewAsync(model);
@@ -784,55 +1005,148 @@ public class AdminController : Controller
 
         var errors = new List<string>();
         var created = 0;
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(model.Rows));
+        using var stream = new MemoryStream();
+        if (model.CsvFile != null)
+        {
+            await model.CsvFile.CopyToAsync(stream);
+            stream.Position = 0;
+        }
+        else
+        {
+            await stream.WriteAsync(Encoding.UTF8.GetBytes(model.Rows));
+            stream.Position = 0;
+        }
         using var parser = new TextFieldParser(stream, Encoding.UTF8)
         {
             TextFieldType = FieldType.Delimited,
             HasFieldsEnclosedInQuotes = true,
             TrimWhiteSpace = true
         };
-        parser.SetDelimiters(",");
-        var rowNumber = 0;
+        parser.SetDelimiters(",", "\t");
+        if (parser.EndOfData)
+        {
+            ModelState.AddModelError(nameof(model.Rows), "ملف CSV فارغ.");
+            await LoadBulkStudentsViewAsync(model);
+            return View("BulkStudents", model);
+        }
+
+        var headers = parser.ReadFields() ?? Array.Empty<string>();
+        var headerMap = headers.Select((header, index) => new { Name = NormalizeCsvHeader(header), Index = index })
+            .Where(item => !string.IsNullOrEmpty(item.Name))
+            .GroupBy(item => item.Name)
+            .ToDictionary(group => group.Key, group => group.First().Index);
+        var knownHeaders = new[]
+        {
+            "الاسم", "name", "fullname", "اسم المستخدم", "username", "رقم الشارع", "streetnumber", "العنوان", "address",
+            "رقم الشقة", "apartmentnumber", "العمارة", "building", "علامة مميزة", "landmark", "ملاحظات العنوان",
+            "التليفون الأرضي", "landline", "موبايل 1", "mobile", "موبايل 2", "mobile2", "يوم الميلاد", "birthday",
+            "شهر الميلاد", "birthmonth", "سنة الميلاد", "birthyear", "أب الاعتراف", "confessionfather", "المرحلة الدراسية",
+            "studystage", "المدرسة / الجامعة", "schooloruniversity", "النوع", "gender", "المهنة", "occupation",
+            "مهنة الأب", "fatheroccupation", "مهنة الأم", "motheroccupation", "اسم الأم", "mothername", "خدمات أخرى",
+            "otherservices", "الرقم القومي", "nationalid", "رابط الصورة الشخصية", "imageurl", "ملاحظات", "notes", "كود المنطقة", "areacode",
+            "المرحلة الدراسية (0-9)", "النوع (ولد / بنت)"
+        };
+        if (!knownHeaders.Any(name => headerMap.ContainsKey(NormalizeCsvHeader(name))))
+        {
+            ModelState.AddModelError(nameof(model.Rows), "صف العناوين لا يحتوي على أي اسم حقل معروف.");
+            await LoadBulkStudentsViewAsync(model);
+            return View("BulkStudents", model);
+        }
+        var rowNumber = 1;
         while (!parser.EndOfData)
         {
             rowNumber++;
             var fields = parser.ReadFields() ?? Array.Empty<string>();
-            if (fields.Length < 3 || string.IsNullOrWhiteSpace(fields[0]) || string.IsNullOrWhiteSpace(fields[1]) || string.IsNullOrWhiteSpace(fields[2]))
+            if (fields.All(string.IsNullOrWhiteSpace)) continue;
+
+            var fullName = CsvValue(headerMap, fields, "الاسم", "name", "fullname");
+            var userName = CsvValue(headerMap, fields, "اسم المستخدم", "username", "user name");
+            if (string.IsNullOrWhiteSpace(userName)) userName = "account" + Guid.NewGuid().ToString("N")[..10];
+            if (await _userManager.FindByNameAsync(userName) != null)
             {
-                errors.Add($"السطر {rowNumber}: مطلوب الاسم واسم المستخدم وكلمة المرور.");
-                continue;
-            }
-            if (await _userManager.FindByNameAsync(fields[1]) != null)
-            {
-                errors.Add($"السطر {rowNumber}: اسم المستخدم {fields[1]} موجود بالفعل.");
+                errors.Add($"السطر {rowNumber}: اسم المستخدم {userName} موجود بالفعل.");
                 continue;
             }
 
-            var student = new ApplicationUser
+            var birthDayText = CsvValue(headerMap, fields, "يوم الميلاد", "birthday", "birth day");
+            var birthMonthText = CsvValue(headerMap, fields, "شهر الميلاد", "birthmonth", "birth month");
+            var birthYearText = CsvValue(headerMap, fields, "سنة الميلاد", "birthyear", "birth year");
+            var studyStageText = CsvValue(headerMap, fields, "المرحلة الدراسية (0-9)", "المرحلة الدراسية", "studystage", "study stage");
+            var birthDay = ParseNullableInt(birthDayText);
+            var birthMonth = ParseNullableInt(birthMonthText);
+            var birthYear = ParseNullableInt(birthYearText);
+            var studyStage = ParseNullableInt(studyStageText);
+            if ((!string.IsNullOrWhiteSpace(birthDayText) && !birthDay.HasValue)
+                || (!string.IsNullOrWhiteSpace(birthMonthText) && !birthMonth.HasValue)
+                || (!string.IsNullOrWhiteSpace(birthYearText) && !birthYear.HasValue)
+                || (!string.IsNullOrWhiteSpace(studyStageText) && !studyStage.HasValue))
             {
-                FullName = fields[0],
-                UserName = fields[1],
-                Email = fields.Length > 4 && !string.IsNullOrWhiteSpace(fields[4]) ? fields[4] : $"{fields[1]}@students.local",
-                Mobile = fields.Length > 3 ? fields[3] : null,
-                SchoolClassId = schoolClass!.Id,
-                ClassName = schoolClass.Name,
-                SchoolLevelId = schoolClass.SchoolLevelId,
-                Level = schoolClass.SchoolLevel.Name,
+                errors.Add($"السطر {rowNumber}: حقول الميلاد والمرحلة الدراسية لازم تكون أرقامًا.");
+                continue;
+            }
+            if ((birthDay.HasValue && birthDay is < 1 or > 31)
+                || (birthMonth.HasValue && birthMonth is < 1 or > 12)
+                || (birthYear.HasValue && birthYear is < 1800 or > 2100)
+                || (studyStage.HasValue && studyStage is < 0 or > 9))
+            {
+                errors.Add($"السطر {rowNumber}: تحقق من يوم وشهر الميلاد والمرحلة الدراسية (0-9).");
+                continue;
+            }
+
+            var isTeacherImport = model.ImportTeachers;
+            var user = new ApplicationUser
+            {
+                FullName = string.IsNullOrWhiteSpace(fullName) ? "بدون اسم" : fullName.Trim(),
+                UserName = userName,
+                Email = CsvValue(headerMap, fields, "البريد", "email") ?? $"{userName}@accounts.local",
+                StreetNumber = CsvValue(headerMap, fields, "رقم الشارع", "streetnumber", "street number"),
+                Address = CsvValue(headerMap, fields, "العنوان", "address"),
+                ApartmentNumber = CsvValue(headerMap, fields, "رقم الشقة", "apartmentnumber", "apartment number"),
+                Building = CsvValue(headerMap, fields, "العمارة", "building"),
+                Landmark = CsvValue(headerMap, fields, "علامة مميزة", "landmark"),
+                AddressNotes = CsvValue(headerMap, fields, "ملاحظات العنوان", "addressnotes", "address notes"),
+                Landline = CsvValue(headerMap, fields, "التليفون الأرضي", "الهاتف الأرضي", "landline"),
+                Mobile = CsvValue(headerMap, fields, "موبايل 1", "mobile", "mobile1"),
+                Mobile2 = CsvValue(headerMap, fields, "موبايل 2", "mobile2"),
+                BirthDay = birthDay,
+                BirthMonth = birthMonth,
+                BirthYear = birthYear,
+                ConfessionFather = CsvValue(headerMap, fields, "أب الاعتراف", "confessionfather", "confession father"),
+                StudyStage = studyStage,
+                SchoolOrUniversity = CsvValue(headerMap, fields, "المدرسة / الجامعة", "المدرسة/الجامعة", "schooloruniversity", "school/university"),
+                Gender = CsvValue(headerMap, fields, "النوع (ولد / بنت)", "النوع", "gender"),
+                Occupation = CsvValue(headerMap, fields, "المهنة", "occupation"),
+                FatherOccupation = CsvValue(headerMap, fields, "مهنة الأب", "fatheroccupation", "father occupation"),
+                MotherOccupation = CsvValue(headerMap, fields, "مهنة الأم", "motheroccupation", "mother occupation"),
+                MotherName = CsvValue(headerMap, fields, "اسم الأم", "mothername", "mother name"),
+                OtherServices = CsvValue(headerMap, fields, "خدمات أخرى", "otherservices", "other services"),
+                NationalId = CsvValue(headerMap, fields, "الرقم القومي", "nationalid", "national id"),
+                ImageUrl = CsvValue(headerMap, fields, "رابط الصورة الشخصية", "imageurl", "profile image"),
+                Notes = CsvValue(headerMap, fields, "ملاحظات", "notes"),
+                AreaCode = CsvValue(headerMap, fields, "كود المنطقة", "areacode", "area code"),
+                SchoolClassId = schoolClass?.Id,
+                ClassName = schoolClass?.Name,
+                SchoolLevelId = schoolClass?.SchoolLevelId,
+                Level = schoolClass?.SchoolLevel.Name,
+                IsTeacher = isTeacherImport,
                 IsActive = true,
                 EmailConfirmed = true,
-                QrCodeValue = Guid.NewGuid().ToString("N")
+                QrCodeValue = Guid.NewGuid().ToString("N"),
+                MustChangePassword = string.IsNullOrWhiteSpace(CsvValue(headerMap, fields, "password", "كلمة المرور"))
             };
-            var result = await _userManager.CreateAsync(student, fields[2]);
+            var password = CsvValue(headerMap, fields, "password", "كلمة المرور")
+                ?? Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(18));
+            var result = await _userManager.CreateAsync(user, password);
             if (!result.Succeeded)
             {
                 errors.Add($"السطر {rowNumber}: {string.Join("؛ ", result.Errors.Select(x => x.Description))}");
                 continue;
             }
-            var roleResult = await _userManager.AddToRoleAsync(student, "Student");
+            var roleResult = await _userManager.AddToRoleAsync(user, isTeacherImport ? "Teacher" : "Student");
             if (!roleResult.Succeeded)
             {
-                student.IsActive = false;
-                await _userManager.UpdateAsync(student);
+                user.IsActive = false;
+                await _userManager.UpdateAsync(user);
                 errors.Add($"السطر {rowNumber}: الحساب اتعمل لكن تعذر تعيين دوره.");
                 continue;
             }
@@ -844,22 +1158,22 @@ public class AdminController : Controller
             _db.AuditLogs.Add(new AuditLog
             {
                 ActorId = actor.Id,
-                Action = "BulkStudentsImported",
-                TargetType = "SchoolClass",
-                TargetId = schoolClass!.Id.ToString(),
-                Details = $"إضافة {created} مخدوم للفصل {schoolClass.Name}",
+                Action = model.ImportTeachers ? "BulkTeachersImported" : "BulkStudentsImported",
+                TargetType = model.SchoolClassId.HasValue ? "SchoolClass" : "User",
+                TargetId = schoolClass?.Id.ToString(),
+                Details = $"إضافة {created} {(model.ImportTeachers ? "خادم" : "مخدوم")}",
                 CreatedAt = DateTime.UtcNow
             });
             await _db.SaveChangesAsync();
         }
-        TempData["SuccessMessage"] = $"تمت إضافة {created} مخدوم.";
+        TempData["SuccessMessage"] = $"تمت إضافة {created} {(model.ImportTeachers ? "خادم" : "مخدوم")}. الحسابات التي لم يتضمن CSV كلمة مرور لها تحتاج تعيين كلمة مرور من الإدارة قبل تسجيل الدخول.";
         if (errors.Count > 0)
         {
             await LoadBulkStudentsViewAsync(model);
             ViewBag.ImportErrors = errors;
             return View("BulkStudents", model);
         }
-        return RedirectToAction(nameof(BulkStudents), new { schoolClassId = schoolClass!.Id });
+        return RedirectToAction(nameof(BulkStudents), new { schoolClassId = model.SchoolClassId, importTeachers = model.ImportTeachers });
     }
 
     [HttpPost]
@@ -1107,7 +1421,7 @@ public class AdminController : Controller
     {
         await LoadSchoolOptionsAsync();
         ViewBag.SelectedClassId = model.SchoolClassId;
-        ViewBag.ClassStudents = model.SchoolClassId > 0
+        ViewBag.ClassStudents = model.SchoolClassId.GetValueOrDefault() > 0
             ? await _db.Users.Where(x => x.SchoolClassId == model.SchoolClassId && !x.IsTeacher && !x.IsAdmin).OrderBy(x => x.FullName).ToListAsync()
             : new List<ApplicationUser>();
     }

@@ -11,6 +11,12 @@
     <a asp-action="Create" class="btn btn-primary">📢 إرسال إشعار مخصص جديد</a>
 </div>
 
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-6"><label class="form-label">بحث</label><input name="search" value="@ViewBag.Search" class="form-control" placeholder="العنوان أو المحتوى" /></div>
+    <div class="col-md-3"><label class="form-label">الموجَّه إلى</label><select name="targetType" class="form-select"><option value="">الكل</option><option value="All" selected="@(ViewBag.TargetType == "All")">الجميع</option><option value="Students" selected="@(ViewBag.TargetType == "Students")">المخدومين</option><option value="Teachers" selected="@(ViewBag.TargetType == "Teachers")">الخدام</option><option value="Admins" selected="@(ViewBag.TargetType == "Admins")">المشرفين</option><option value="SpecificUser" selected="@(ViewBag.TargetType == "SpecificUser")">مستخدم محدد</option><option value="SpecificTeam" selected="@(ViewBag.TargetType == "SpecificTeam")">فريق محدد</option></select></div>
+    <div class="col-md-3 d-flex gap-2"><button type="submit" class="btn btn-primary flex-grow-1">تصفية</button><a asp-action="Manage" class="btn btn-outline-secondary">مسح</a></div>
+</form>
+
 <div class="card shadow-sm border-0">
     <div class="card-header bg-white border-bottom py-3">
         <h5 class="fw-bold mb-0 text-dark">آخر 100 إشعار في النظام</h5>

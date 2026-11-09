@@ -5,6 +5,11 @@
 
 <div class="card p-4">
     <h2>أعلى 10 مخدومين في الدرجات</h2>
+    <form method="get" class="row g-2 align-items-end mt-2">
+        <div class="col-md-5"><label class="form-label">بحث</label><input name="search" value="@ViewBag.Search" class="form-control" placeholder="اسم المخدوم أو الفصل" /></div>
+        <div class="col-md-4"><label class="form-label">المرحلة</label><select name="schoolLevelId" class="form-select"><option value="">كل المراحل</option>@foreach (var level in ViewBag.Levels) { <option value="@level.Id" selected="@(ViewBag.SchoolLevelId == level.Id)">@level.Name</option> }</select></div>
+        <div class="col-md-3 d-flex gap-2"><button type="submit" class="btn btn-primary flex-grow-1">تصفية</button><a asp-action="Leaderboard" class="btn btn-outline-secondary">مسح</a></div>
+    </form>
 
     @if (Model != null && Model.Any())
     {

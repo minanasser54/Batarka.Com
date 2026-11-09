@@ -16,6 +16,13 @@
     </div>
 </div>
 
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-4"><label class="form-label">بحث</label><input name="search" value="@ViewBag.Search" class="form-control" placeholder="عنوان الكارت أو وصفه" /></div>
+    <div class="col-md-3"><label class="form-label">القسم</label><select name="categoryId" class="form-select"><option value="">كل الأقسام</option>@foreach (var category in ViewBag.Categories) { <option value="@category.Id" selected="@(ViewBag.CategoryId == category.Id)">@category.Name</option> }</select></div>
+    <div class="col-md-3"><label class="form-label">الحالة</label><select name="status" class="form-select"><option value="">الكل</option><option value="available" selected="@(ViewBag.CardStatus == "available")">متاح</option><option value="sold" selected="@(ViewBag.CardStatus == "sold")">مباع</option><option value="used" selected="@(ViewBag.CardStatus == "used")">مستخدم</option></select></div>
+    <div class="col-md-2 d-flex gap-2"><button type="submit" class="btn btn-primary flex-grow-1">تصفية</button><a asp-action="ManageCards" class="btn btn-outline-secondary">مسح</a></div>
+</form>
+
 <div class="card shadow-sm border-0">
     <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
         <h5 class="fw-bold mb-0 text-dark">قائمة الكروت في النظام (@Model.Count())</h5>

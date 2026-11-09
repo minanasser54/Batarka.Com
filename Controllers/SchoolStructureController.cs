@@ -16,9 +16,16 @@ public class SchoolStructureController : Controller
     public SchoolStructureController(ApplicationDbContext db) => _db = db;
 
     [HttpGet]
-    public async Task<IActionResult> Levels()
+    public async Task<IActionResult> Levels(string? search)
     {
-        var levels = await _db.SchoolLevels
+        var query = _db.SchoolLevels.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(x => x.Name.Contains(term));
+        }
+        ViewBag.Search = search;
+        var levels = await query
             .Include(x => x.Classes)
             .OrderBy(x => x.SortOrder)
             .ThenBy(x => x.Name)
@@ -106,12 +113,18 @@ public class SchoolStructureController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Classes(int? levelId)
+    public async Task<IActionResult> Classes(int? levelId, string? search)
     {
         var query = _db.SchoolClasses.Include(x => x.SchoolLevel).AsQueryable();
         if (levelId.HasValue) query = query.Where(x => x.SchoolLevelId == levelId.Value);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(x => x.Name.Contains(term) || x.SchoolLevel.Name.Contains(term));
+        }
         ViewBag.Levels = await _db.SchoolLevels.OrderBy(x => x.SortOrder).ThenBy(x => x.Name).ToListAsync();
         ViewBag.SelectedLevelId = levelId;
+        ViewBag.Search = search;
         return View(await query.OrderBy(x => x.SchoolLevel.SortOrder).ThenBy(x => x.Name).ToListAsync());
     }
 
@@ -202,79 +215,62 @@ public class SchoolStructureController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> ClassStudents(int id)
+    public async Task<IActionResult> ClassStudents(int id, string? search, string? activeStatus)
     {
         var schoolClass = await _db.SchoolClasses.Include(x => x.SchoolLevel).FirstOrDefaultAsync(x => x.Id == id);
         if (schoolClass == null) return NotFound();
         ViewBag.ClassTitle = schoolClass.Name;
         ViewBag.LevelTitle = schoolClass.SchoolLevel.Name;
         ViewBag.ClassId = id;
+        ViewBag.Search = search;
+        ViewBag.ActiveStatus = activeStatus;
         ViewBag.ClassTeachers = await GetClassTeachersAsync(id);
-        return View(await GetClassStudentsAsync(id));
+        return View(await GetClassStudentsAsync(id, search, activeStatus));
     }
 
     [HttpGet]
-    public async Task<IActionResult> ExportClassStudents(int id)
+    public async Task<IActionResult> ExportClassStudents(int id, string? search, string? activeStatus)
     {
         var schoolClass = await _db.SchoolClasses.FirstOrDefaultAsync(x => x.Id == id);
         if (schoolClass == null) return NotFound();
-        var students = await GetClassStudentsAsync(id);
-        var csv = new StringBuilder();
-        csv.AppendLine("الاسم,اسم المستخدم,البريد,الموبايل,العنوان,ملاحظات,الفصل,المرحلة,الرصيد,عدد مرات الحضور,الحالة,تاريخ الإنشاء");
-        foreach (var student in students)
-        {
-            csv.AppendLine(string.Join(',', new[]
-            {
-                Csv(student.FullName), Csv(student.UserName), Csv(student.Email), Csv(student.Mobile), Csv(student.Address), Csv(student.Notes), Csv(student.ClassName), Csv(student.Level),
-                Csv(student.GradingBalance.ToString(CultureInfo.InvariantCulture)),
-                Csv(student.TotalAttendance.ToString(CultureInfo.InvariantCulture)),
-                Csv(student.IsActive ? "نشط" : "متوقف"),
-                Csv(student.CreatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
-            }));
-        }
-
-        var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
-        return File(bytes, "text/csv; charset=utf-8", $"students-class-{id}.csv");
+        var students = await GetClassStudentsAsync(id, search, activeStatus);
+        return RedirectToAction("ExportStudentsCsv", "Admin", new { schoolClassId = id, search, activeStatus });
     }
 
     [HttpGet]
-    public async Task<IActionResult> LevelStudents(int id)
+    public async Task<IActionResult> LevelStudents(int id, string? search, string? activeStatus)
     {
         var level = await _db.SchoolLevels.FindAsync(id);
         if (level == null) return NotFound();
         ViewBag.LevelTitle = level.Name;
         ViewBag.LevelId = id;
-        return View(await GetLevelStudentsAsync(id));
+        ViewBag.Search = search;
+        ViewBag.ActiveStatus = activeStatus;
+        return View(await GetLevelStudentsAsync(id, search, activeStatus));
     }
 
     [HttpGet]
-    public async Task<IActionResult> ExportLevelStudents(int id)
+    public async Task<IActionResult> ExportLevelStudents(int id, string? search, string? activeStatus)
     {
         var level = await _db.SchoolLevels.FindAsync(id);
         if (level == null) return NotFound();
-        var students = await GetLevelStudentsAsync(id);
-        var csv = new StringBuilder();
-        csv.AppendLine("الاسم,اسم المستخدم,البريد,الموبايل,العنوان,ملاحظات,الفصل,المرحلة,الرصيد,عدد مرات الحضور,الحالة,تاريخ الإنشاء");
-        foreach (var student in students)
-        {
-            csv.AppendLine(string.Join(',', new[]
-            {
-                Csv(student.FullName), Csv(student.UserName), Csv(student.Email), Csv(student.Mobile), Csv(student.Address), Csv(student.Notes), Csv(student.ClassName), Csv(student.Level),
-                Csv(student.GradingBalance.ToString(CultureInfo.InvariantCulture)),
-                Csv(student.TotalAttendance.ToString(CultureInfo.InvariantCulture)),
-                Csv(student.IsActive ? "نشط" : "متوقف"),
-                Csv(student.CreatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
-            }));
-        }
-
-        var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
-        return File(bytes, "text/csv; charset=utf-8", $"students-level-{id}.csv");
+        var students = await GetLevelStudentsAsync(id, search, activeStatus);
+        return RedirectToAction("ExportStudentsCsv", "Admin", new { schoolLevelId = id, search, activeStatus });
     }
 
-    private Task<List<AdminStudentListItemViewModel>> GetLevelStudentsAsync(int id)
+    private Task<List<AdminStudentListItemViewModel>> GetLevelStudentsAsync(int id, string? search = null, string? activeStatus = null)
     {
-        return _db.Users
-            .Where(x => x.SchoolLevelId == id && !x.IsTeacher && !x.IsAdmin && x.DeletedAt == null)
+        var query = _db.Users.Where(x => x.SchoolLevelId == id && !x.IsTeacher && !x.IsAdmin && x.DeletedAt == null);
+        if (activeStatus == "active") query = query.Where(x => x.IsActive);
+        if (activeStatus == "inactive") query = query.Where(x => !x.IsActive);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(x => x.FullName.Contains(term) || (x.UserName != null && x.UserName.Contains(term))
+                || (x.Mobile != null && x.Mobile.Contains(term)) || (x.Address != null && x.Address.Contains(term)));
+        }
+
+        return query
             .OrderBy(x => x.SchoolClass!.Name)
             .ThenBy(x => x.FullName)
             .Select(x => new AdminStudentListItemViewModel
@@ -297,10 +293,19 @@ public class SchoolStructureController : Controller
             .ToListAsync();
     }
 
-    private Task<List<AdminStudentListItemViewModel>> GetClassStudentsAsync(int id)
+    private Task<List<AdminStudentListItemViewModel>> GetClassStudentsAsync(int id, string? search = null, string? activeStatus = null)
     {
-        return _db.Users
-            .Where(x => x.SchoolClassId == id && !x.IsTeacher && !x.IsAdmin && x.DeletedAt == null)
+        var query = _db.Users.Where(x => x.SchoolClassId == id && !x.IsTeacher && !x.IsAdmin && x.DeletedAt == null);
+        if (activeStatus == "active") query = query.Where(x => x.IsActive);
+        if (activeStatus == "inactive") query = query.Where(x => !x.IsActive);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(x => x.FullName.Contains(term) || (x.UserName != null && x.UserName.Contains(term))
+                || (x.Mobile != null && x.Mobile.Contains(term)) || (x.Address != null && x.Address.Contains(term)));
+        }
+
+        return query
             .OrderBy(x => x.FullName)
             .Select(x => new AdminStudentListItemViewModel
             {

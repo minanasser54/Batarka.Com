@@ -37,6 +37,10 @@
 
     <!-- Categories List -->
     <div class="col-md-8">
+        <form method="get" class="row g-2 align-items-end mb-3">
+            <div class="col"><label class="form-label">بحث في الأقسام</label><input name="search" value="@ViewBag.Search" class="form-control" placeholder="الاسم أو الوصف" /></div>
+            <div class="col-auto d-flex gap-2"><button type="submit" class="btn btn-primary">تصفية</button><a asp-action="Categories" class="btn btn-outline-secondary">مسح</a></div>
+        </form>
         <div class="card shadow-sm border-0">
             <div class="card-header bg-white border-bottom py-3">
                 <h5 class="fw-bold mb-0 text-dark">قائمة الأقسام الموجودة (@Model.Count())</h5>

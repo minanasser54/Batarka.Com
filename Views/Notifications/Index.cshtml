@@ -27,6 +27,12 @@
     </div>
 </div>
 
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-6"><label class="form-label">بحث في الإشعارات</label><input name="search" value="@ViewBag.Search" class="form-control" placeholder="العنوان أو المحتوى" /></div>
+    <div class="col-md-3"><label class="form-label">حالة القراءة</label><select name="status" class="form-select"><option value="">الكل</option><option value="unread" selected="@(ViewBag.NotificationStatus == "unread")">غير مقروء</option><option value="read" selected="@(ViewBag.NotificationStatus == "read")">مقروء</option></select></div>
+    <div class="col-md-3 d-flex gap-2"><button type="submit" class="btn btn-primary flex-grow-1">تصفية</button><a asp-action="Index" class="btn btn-outline-secondary">مسح</a></div>
+</form>
+
 @if (!Model.Any())
 {
     <div class="card text-center p-5 shadow-sm border-0">

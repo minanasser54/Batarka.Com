@@ -26,6 +26,12 @@
     <div class="col-md-2"><button class="btn btn-success w-100" type="submit">إضافة فصل</button></div>
 </form>
 
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-4"><label class="form-label">بحث عن فصل أو مرحلة</label><input name="search" value="@ViewBag.Search" class="form-control" /></div>
+    <div class="col-md-4"><label class="form-label">المرحلة</label><select name="levelId" class="form-select"><option value="">كل المراحل</option>@foreach (var level in ViewBag.Levels) { <option value="@level.Id" selected="@(ViewBag.SelectedLevelId == level.Id)">@level.Name</option> }</select></div>
+    <div class="col-md-4 d-flex gap-2"><button class="btn btn-primary flex-grow-1" type="submit">تصفية</button><a asp-action="Classes" class="btn btn-outline-secondary">مسح</a></div>
+</form>
+
 <div class="table-responsive">
     <table class="table table-striped align-middle">
         <thead><tr><th>الفصل</th><th>المرحلة</th><th>إجراءات</th></tr></thead>

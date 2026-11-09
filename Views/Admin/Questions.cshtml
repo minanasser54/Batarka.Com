@@ -16,6 +16,12 @@
     <div class="col-auto"><button class="btn btn-primary" type="submit">حفظ نقاط الحضور</button></div>
 </form>
 
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-6"><label class="form-label">بحث عن سؤال</label><input name="search" value="@ViewBag.Search" class="form-control" placeholder="الكود أو نص السؤال" /></div>
+    <div class="col-md-3"><label class="form-label">الحالة</label><select name="status" class="form-select"><option value="">الكل</option><option value="enabled" selected="@(ViewBag.QuestionStatus == "enabled")">مفعّل</option><option value="disabled" selected="@(ViewBag.QuestionStatus == "disabled")">متوقف</option></select></div>
+    <div class="col-md-3 d-flex gap-2"><button type="submit" class="btn btn-primary flex-grow-1">تصفية</button><a asp-action="Questions" class="btn btn-outline-secondary">مسح</a></div>
+</form>
+
 <h4 class="mb-3">الأسئلة الحالية</h4>
 @foreach (var question in Model)
 {

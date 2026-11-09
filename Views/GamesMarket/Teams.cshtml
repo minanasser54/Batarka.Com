@@ -24,6 +24,11 @@
     </div>
 </div>
 
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-6"><label class="form-label">بحث عن فريق</label><input name="search" value="@ViewBag.Search" class="form-control" placeholder="اسم الفريق أو وصفه" /></div>
+    <div class="col-auto d-flex gap-2"><button class="btn btn-primary" type="submit">تصفية</button><a asp-action="Teams" class="btn btn-outline-secondary">مسح</a></div>
+</form>
+
 @if (!teams.Any())
 {
     <div class="card text-center p-5 shadow-sm">

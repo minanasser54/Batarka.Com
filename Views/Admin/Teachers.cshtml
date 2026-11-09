@@ -4,6 +4,12 @@
 
 <div class="card p-3">
     <h2>إدارة الخدام</h2>
+    <form method="get" class="row g-2 align-items-end mt-2">
+        <div class="col-md-5"><label class="form-label">بحث</label><input name="search" value="@ViewBag.Search" class="form-control" placeholder="الاسم أو اسم المستخدم أو الهاتف" /></div>
+        <div class="col-md-3"><label class="form-label">نوع الحساب</label><select name="accountType" class="form-select"><option value="">الكل</option><option value="teacher" selected="@(ViewBag.AccountType == "teacher")">خادم</option><option value="admin" selected="@(ViewBag.AccountType == "admin")">مشرف</option></select></div>
+        <div class="col-md-2"><label class="form-label">الحالة</label><select name="activeStatus" class="form-select"><option value="">الكل</option><option value="active" selected="@(ViewBag.ActiveStatus == "active")">نشط</option><option value="inactive" selected="@(ViewBag.ActiveStatus == "inactive")">متوقف</option></select></div>
+        <div class="col-md-2 d-flex gap-2"><button class="btn btn-primary flex-grow-1" type="submit">تصفية</button><a asp-action="Teachers" class="btn btn-outline-secondary">مسح</a></div>
+    </form>
     <div class="table-responsive mt-3">
         <table class="table table-striped">
             <thead>
