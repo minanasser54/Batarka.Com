@@ -416,119 +416,103 @@ public class AdminController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public Task<IActionResult> BulkEditStudents(BulkEditUsersViewModel model) => SaveBulkEditUsersAsync(model, isTeacher: false);
+    public Task<IActionResult> UpdateBulkEditStudent(BulkEditUserListItemViewModel model) => SaveBulkEditUserRowAsync(model, isTeacher: false);
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public Task<IActionResult> BulkEditTeachers(BulkEditUsersViewModel model) => SaveBulkEditUsersAsync(model, isTeacher: true);
+    public Task<IActionResult> UpdateBulkEditTeacher(BulkEditUserListItemViewModel model) => SaveBulkEditUserRowAsync(model, isTeacher: true);
 
-    private async Task<IActionResult> SaveBulkEditUsersAsync(BulkEditUsersViewModel model, bool isTeacher)
+    private async Task<IActionResult> SaveBulkEditUserRowAsync(BulkEditUserListItemViewModel model, bool isTeacher)
     {
         var actor = await GetCurrentUserAsync();
         if (actor == null || !actor.IsAdmin) return Forbid();
 
-        model.IsTeacher = isTeacher;
-        var allowedFields = new HashSet<string>(StringComparer.Ordinal)
-                {
-                    nameof(model.FullName), nameof(model.SchoolClassId), nameof(model.IsActive), nameof(model.Mobile), nameof(model.Mobile2),
-                    nameof(model.Landline), nameof(model.Address), nameof(model.StreetNumber), nameof(model.ApartmentNumber), nameof(model.Building),
-                    nameof(model.Landmark), nameof(model.AddressNotes), nameof(model.BirthDay), nameof(model.BirthMonth), nameof(model.BirthYear),
-                    nameof(model.ConfessionFather), nameof(model.StudyStage), nameof(model.SchoolOrUniversity), nameof(model.Gender),
-                    nameof(model.Occupation), nameof(model.FatherOccupation), nameof(model.MotherOccupation), nameof(model.MotherName),
-                    nameof(model.OtherServices), nameof(model.NationalId), nameof(model.ImageUrl), nameof(model.Notes), nameof(model.AreaCode)
-                };
-        model.FieldsToUpdate = model.FieldsToUpdate.Where(allowedFields.Contains).Distinct().ToList();
-        model.SelectedUserIds = model.SelectedUserIds.Distinct().ToList();
+        var user = await _db.Users.FirstOrDefaultAsync(item => item.Id == model.Id && item.DeletedAt == null);
+        if (user == null) return NotFound();
+        if (user.IsTeacher != isTeacher || user.IsAdmin) return Forbid();
 
-        if (model.SelectedUserIds.Count == 0) ModelState.AddModelError(nameof(model.SelectedUserIds), "حدد حسابًا واحدًا على الأقل.");
-        if (model.SelectedUserIds.Count > 500) ModelState.AddModelError(nameof(model.SelectedUserIds), "يمكن تحديث 500 حساب كحد أقصى في كل مرة.");
-        if (model.FieldsToUpdate.Count == 0) ModelState.AddModelError(nameof(model.FieldsToUpdate), "اختر حقلًا واحدًا على الأقل لتحديثه.");
-        if (model.FieldsToUpdate.Contains(nameof(model.FullName)) && string.IsNullOrWhiteSpace(model.FullName))
-            ModelState.AddModelError(nameof(model.FullName), "الاسم لا يمكن أن يكون فارغًا.");
-        if (model.BirthDay is < 1 or > 31 && model.FieldsToUpdate.Contains(nameof(model.BirthDay)))
-            ModelState.AddModelError(nameof(model.BirthDay), "يوم الميلاد لازم يكون بين 1 و31.");
-        if (model.BirthMonth is < 1 or > 12 && model.FieldsToUpdate.Contains(nameof(model.BirthMonth)))
-            ModelState.AddModelError(nameof(model.BirthMonth), "شهر الميلاد لازم يكون بين 1 و12.");
-        if (model.BirthYear is < 1800 or > 2100 && model.FieldsToUpdate.Contains(nameof(model.BirthYear)))
-            ModelState.AddModelError(nameof(model.BirthYear), "سنة الميلاد لازم تكون بين 1800 و2100.");
-        if (model.StudyStage is < 0 or > 9 && model.FieldsToUpdate.Contains(nameof(model.StudyStage)))
-            ModelState.AddModelError(nameof(model.StudyStage), "المرحلة الدراسية لازم تكون بين 0 و9.");
+        if (!ModelState.IsValid || string.IsNullOrWhiteSpace(model.FullName))
+        {
+            TempData["ErrorMessage"] = "تحقق من الاسم والحقول الرقمية قبل الحفظ.";
+            return RedirectToBulkEditList(model, isTeacher);
+        }
+
+        if (model.BirthDay is < 1 or > 31 || model.BirthMonth is < 1 or > 12
+            || model.BirthYear is < 1800 or > 2100 || model.StudyStage is < 0 or > 9)
+        {
+            TempData["ErrorMessage"] = "تحقق من يوم وشهر وسنة الميلاد والمرحلة الدراسية.";
+            return RedirectToBulkEditList(model, isTeacher);
+        }
 
         SchoolClass? schoolClass = null;
-        if (model.FieldsToUpdate.Contains(nameof(model.SchoolClassId)) && model.SchoolClassId.HasValue)
+        if (model.SchoolClassId.HasValue)
         {
             schoolClass = await _db.SchoolClasses.Include(item => item.SchoolLevel)
                 .FirstOrDefaultAsync(item => item.Id == model.SchoolClassId.Value);
-            if (schoolClass == null) ModelState.AddModelError(nameof(model.SchoolClassId), "الفصل المختار غير موجود.");
-        }
-
-        if (!ModelState.IsValid)
-            return await LoadBulkEditUsersAsync(model, isTeacher);
-
-        var query = _db.Users.Where(user => user.DeletedAt == null && (isTeacher ? user.IsTeacher && !user.IsAdmin : !user.IsTeacher && !user.IsAdmin));
-        var users = await query.Where(user => model.SelectedUserIds.Contains(user.Id)).ToListAsync();
-        if (users.Count != model.SelectedUserIds.Count)
-        {
-            ModelState.AddModelError(nameof(model.SelectedUserIds), "بعض الحسابات المحددة لم تعد متاحة ضمن هذه القائمة.");
-            return await LoadBulkEditUsersAsync(model, isTeacher);
-        }
-
-        foreach (var user in users)
-        {
-            foreach (var field in model.FieldsToUpdate)
+            if (schoolClass == null)
             {
-                switch (field)
-                {
-                    case nameof(model.FullName): user.FullName = model.FullName!.Trim(); break;
-                    case nameof(model.SchoolClassId):
-                        user.SchoolClassId = schoolClass?.Id;
-                        user.ClassName = schoolClass?.Name;
-                        user.SchoolLevelId = schoolClass?.SchoolLevelId;
-                        user.Level = schoolClass?.SchoolLevel.Name;
-                        break;
-                    case nameof(model.IsActive): user.IsActive = model.IsActive; break;
-                    case nameof(model.Mobile): user.Mobile = model.Mobile?.Trim(); break;
-                    case nameof(model.Mobile2): user.Mobile2 = model.Mobile2?.Trim(); break;
-                    case nameof(model.Landline): user.Landline = model.Landline?.Trim(); break;
-                    case nameof(model.Address): user.Address = model.Address?.Trim(); break;
-                    case nameof(model.StreetNumber): user.StreetNumber = model.StreetNumber?.Trim(); break;
-                    case nameof(model.ApartmentNumber): user.ApartmentNumber = model.ApartmentNumber?.Trim(); break;
-                    case nameof(model.Building): user.Building = model.Building?.Trim(); break;
-                    case nameof(model.Landmark): user.Landmark = model.Landmark?.Trim(); break;
-                    case nameof(model.AddressNotes): user.AddressNotes = model.AddressNotes?.Trim(); break;
-                    case nameof(model.BirthDay): user.BirthDay = model.BirthDay; break;
-                    case nameof(model.BirthMonth): user.BirthMonth = model.BirthMonth; break;
-                    case nameof(model.BirthYear): user.BirthYear = model.BirthYear; break;
-                    case nameof(model.ConfessionFather): user.ConfessionFather = model.ConfessionFather?.Trim(); break;
-                    case nameof(model.StudyStage): user.StudyStage = model.StudyStage; break;
-                    case nameof(model.SchoolOrUniversity): user.SchoolOrUniversity = model.SchoolOrUniversity?.Trim(); break;
-                    case nameof(model.Gender): user.Gender = model.Gender?.Trim(); break;
-                    case nameof(model.Occupation): user.Occupation = model.Occupation?.Trim(); break;
-                    case nameof(model.FatherOccupation): user.FatherOccupation = model.FatherOccupation?.Trim(); break;
-                    case nameof(model.MotherOccupation): user.MotherOccupation = model.MotherOccupation?.Trim(); break;
-                    case nameof(model.MotherName): user.MotherName = model.MotherName?.Trim(); break;
-                    case nameof(model.OtherServices): user.OtherServices = model.OtherServices?.Trim(); break;
-                    case nameof(model.NationalId): user.NationalId = model.NationalId?.Trim(); break;
-                    case nameof(model.ImageUrl): user.ImageUrl = model.ImageUrl?.Trim(); break;
-                    case nameof(model.Notes): user.Notes = model.Notes?.Trim(); break;
-                    case nameof(model.AreaCode): user.AreaCode = model.AreaCode?.Trim(); break;
-                }
+                TempData["ErrorMessage"] = "الفصل المختار غير موجود.";
+                return RedirectToBulkEditList(model, isTeacher);
             }
+        }
 
-            user.UpdatedAt = DateTime.UtcNow;
-            user.UpdatedById = actor.Id;
+        user.FullName = model.FullName.Trim();
+        user.SchoolClassId = schoolClass?.Id;
+        user.ClassName = schoolClass?.Name;
+        user.SchoolLevelId = schoolClass?.SchoolLevelId;
+        user.Level = schoolClass?.SchoolLevel.Name;
+        user.IsActive = model.IsActive;
+        user.Mobile = model.Mobile?.Trim();
+        user.Mobile2 = model.Mobile2?.Trim();
+        user.Landline = model.Landline?.Trim();
+        user.Address = model.Address?.Trim();
+        user.StreetNumber = model.StreetNumber?.Trim();
+        user.ApartmentNumber = model.ApartmentNumber?.Trim();
+        user.Building = model.Building?.Trim();
+        user.Landmark = model.Landmark?.Trim();
+        user.AddressNotes = model.AddressNotes?.Trim();
+        user.BirthDay = model.BirthDay;
+        user.BirthMonth = model.BirthMonth;
+        user.BirthYear = model.BirthYear;
+        user.ConfessionFather = model.ConfessionFather?.Trim();
+        user.StudyStage = model.StudyStage;
+        user.SchoolOrUniversity = model.SchoolOrUniversity?.Trim();
+        user.Gender = model.Gender?.Trim();
+        user.Occupation = model.Occupation?.Trim();
+        user.FatherOccupation = model.FatherOccupation?.Trim();
+        user.MotherOccupation = model.MotherOccupation?.Trim();
+        user.MotherName = model.MotherName?.Trim();
+        user.OtherServices = model.OtherServices?.Trim();
+        user.NationalId = model.NationalId?.Trim();
+        user.ImageUrl = model.ImageUrl?.Trim();
+        user.Notes = model.Notes?.Trim();
+        user.AreaCode = model.AreaCode?.Trim();
+        user.UpdatedAt = DateTime.UtcNow;
+        user.UpdatedById = actor.Id;
+
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = string.Join("؛ ", result.Errors.Select(error => error.Description));
+            return RedirectToBulkEditList(model, isTeacher);
         }
 
         _db.AuditLogs.Add(new AuditLog
         {
             ActorId = actor.Id,
-            Action = isTeacher ? "BulkTeachersUpdated" : "BulkStudentsUpdated",
+            Action = isTeacher ? "TeacherUpdated" : "StudentUpdated",
             TargetType = "User",
-            Details = $"تحديث جماعي لـ {users.Count} حساب. الحقول: {string.Join(", ", model.FieldsToUpdate)}",
+            TargetId = user.Id,
+            Details = "تم تحديث بيانات الحساب من جدول التعديل الجماعي.",
             CreatedAt = DateTime.UtcNow
         });
         await _db.SaveChangesAsync();
-        TempData["SuccessMessage"] = $"تم تحديث {users.Count} حساب.";
+        TempData["SuccessMessage"] = $"تم تحديث بيانات {user.FullName}.";
+        return RedirectToBulkEditList(model, isTeacher);
+    }
+
+    private IActionResult RedirectToBulkEditList(BulkEditUserListItemViewModel model, bool isTeacher)
+    {
         return RedirectToAction(isTeacher ? nameof(BulkEditTeachers) : nameof(BulkEditStudents), new
         {
             search = model.Search,
@@ -557,9 +541,33 @@ public class AdminController : Controller
                 Id = user.Id,
                 FullName = user.FullName,
                 UserName = user.UserName ?? string.Empty,
+                SchoolClassId = user.SchoolClassId,
+                IsActive = user.IsActive,
                 Mobile = user.Mobile,
-                ClassName = user.SchoolClass != null ? user.SchoolClass.Name : user.ClassName,
-                IsActive = user.IsActive
+                Mobile2 = user.Mobile2,
+                Landline = user.Landline,
+                Address = user.Address,
+                StreetNumber = user.StreetNumber,
+                ApartmentNumber = user.ApartmentNumber,
+                Building = user.Building,
+                Landmark = user.Landmark,
+                AddressNotes = user.AddressNotes,
+                BirthDay = user.BirthDay,
+                BirthMonth = user.BirthMonth,
+                BirthYear = user.BirthYear,
+                ConfessionFather = user.ConfessionFather,
+                StudyStage = user.StudyStage,
+                SchoolOrUniversity = user.SchoolOrUniversity,
+                Gender = user.Gender,
+                Occupation = user.Occupation,
+                FatherOccupation = user.FatherOccupation,
+                MotherOccupation = user.MotherOccupation,
+                MotherName = user.MotherName,
+                OtherServices = user.OtherServices,
+                NationalId = user.NationalId,
+                ImageUrl = user.ImageUrl,
+                Notes = user.Notes,
+                AreaCode = user.AreaCode
             })
             .ToListAsync();
         ViewBag.Classes = await _db.SchoolClasses.Include(item => item.SchoolLevel)

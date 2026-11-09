@@ -422,11 +422,24 @@ public class BulkEditUsersViewModel
     public string? Search { get; set; }
     public int? SchoolClassFilterId { get; set; }
     public string? ActiveStatusFilter { get; set; }
-    public List<string> SelectedUserIds { get; set; } = new();
-    public List<string> FieldsToUpdate { get; set; } = new();
     public List<BulkEditUserListItemViewModel> Users { get; set; } = new();
+}
 
-    public string? FullName { get; set; }
+public class BulkEditUserListItemViewModel
+{
+    [Required]
+    public string Id { get; set; } = string.Empty;
+
+    public string? Search { get; set; }
+    public int? SchoolClassFilterId { get; set; }
+    public string? ActiveStatusFilter { get; set; }
+
+    [Required(ErrorMessage = "الاسم مطلوب")]
+    [MaxLength(200)]
+    public string FullName { get; set; } = string.Empty;
+
+    public string UserName { get; set; } = string.Empty;
+
     public int? SchoolClassId { get; set; }
     public bool IsActive { get; set; }
     public string? Mobile { get; set; }
@@ -438,11 +451,11 @@ public class BulkEditUsersViewModel
     public string? Building { get; set; }
     public string? Landmark { get; set; }
     public string? AddressNotes { get; set; }
-    public int? BirthDay { get; set; }
-    public int? BirthMonth { get; set; }
-    public int? BirthYear { get; set; }
+    [Range(1, 31)] public int? BirthDay { get; set; }
+    [Range(1, 12)] public int? BirthMonth { get; set; }
+    [Range(1800, 2100)] public int? BirthYear { get; set; }
     public string? ConfessionFather { get; set; }
-    public int? StudyStage { get; set; }
+    [Range(0, 9)] public int? StudyStage { get; set; }
     public string? SchoolOrUniversity { get; set; }
     public string? Gender { get; set; }
     public string? Occupation { get; set; }
@@ -454,16 +467,6 @@ public class BulkEditUsersViewModel
     public string? ImageUrl { get; set; }
     public string? Notes { get; set; }
     public string? AreaCode { get; set; }
-}
-
-public class BulkEditUserListItemViewModel
-{
-    public string Id { get; set; } = string.Empty;
-    public string FullName { get; set; } = string.Empty;
-    public string UserName { get; set; } = string.Empty;
-    public string? Mobile { get; set; }
-    public string? ClassName { get; set; }
-    public bool IsActive { get; set; }
 }
 
 public class ResetPasswordViewModel
