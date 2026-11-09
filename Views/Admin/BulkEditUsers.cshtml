@@ -1,0 +1,107 @@
+@model MyMvcApp10.Models.BulkEditUsersViewModel
+@{
+    var title = Model.IsTeacher ? "تعديل جماعي للخدام" : "تعديل جماعي للمخدومين";
+    var action = Model.IsTeacher ? "BulkEditTeachers" : "BulkEditStudents";
+    ViewData["Title"] = title;
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+        <h2 class="mb-1">@title</h2>
+        <p class="text-muted mb-0">حدد الحسابات والحقول المطلوب تعديلها. الحقول غير المحددة لن تتغير.</p>
+    </div>
+    <a asp-action="@(Model.IsTeacher ? "Teachers" : "Students")" class="btn btn-outline-secondary">رجوع للقائمة</a>
+</div>
+
+<form method="get" asp-action="@action" class="row g-2 align-items-end mb-3">
+    <div class="col-md-5"><label class="form-label">بحث</label><input name="search" value="@Model.Search" class="form-control" placeholder="الاسم أو اسم المستخدم أو الهاتف" /></div>
+    <div class="col-md-3"><label class="form-label">الفصل</label><select name="schoolClassFilterId" class="form-select"><option value="">كل الفصول</option>@foreach (var item in ViewBag.Classes) { <option value="@item.Id" selected="@(Model.SchoolClassFilterId == item.Id)">@item.SchoolLevel.Name - @item.Name</option> }</select></div>
+    <div class="col-md-2"><label class="form-label">الحالة</label><select name="activeStatusFilter" class="form-select"><option value="">الكل</option><option value="active" selected="@(Model.ActiveStatusFilter == "active")">نشط</option><option value="inactive" selected="@(Model.ActiveStatusFilter == "inactive")">متوقف</option></select></div>
+    <div class="col-md-2 d-flex gap-2"><button class="btn btn-primary flex-grow-1" type="submit">تصفية</button><a asp-action="@action" class="btn btn-outline-secondary">مسح</a></div>
+</form>
+
+<form asp-action="@action" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Search" />
+    <input type="hidden" asp-for="SchoolClassFilterId" />
+    <input type="hidden" asp-for="ActiveStatusFilter" />
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+    <div class="table-responsive mb-4">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-light"><tr><th><input type="checkbox" id="selectAllAccounts" aria-label="تحديد الكل" /></th><th>الاسم</th><th>اسم المستخدم</th><th>الهاتف</th><th>الفصل</th><th>الحالة</th></tr></thead>
+            <tbody>
+            @foreach (var user in Model.Users)
+            {
+                <tr>
+                    <td><input type="checkbox" name="SelectedUserIds" value="@user.Id" checked="@(Model.SelectedUserIds.Contains(user.Id))" /></td>
+                    <td>@user.FullName</td><td>@user.UserName</td><td>@(user.Mobile ?? "—")</td><td>@(user.ClassName ?? "—")</td>
+                    <td>@(user.IsActive ? "نشط" : "متوقف")</td>
+                </tr>
+            }
+            @if (Model.Users.Count == 0)
+            {
+                <tr><td colspan="6" class="text-center text-muted py-4">لا توجد حسابات مطابقة.</td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="border-top pt-3">
+        <h4>الحقول المطلوب تطبيقها</h4>
+        <p class="text-muted">القيم الفارغة تمسح بيانات الحقل عند تحديده للتحديث. يمكن تحديث 500 حساب كحد أقصى في كل مرة.</p>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="form-check"><input class="form-check-input" type="checkbox" name="FieldsToUpdate" value="FullName" checked="@(Model.FieldsToUpdate.Contains("FullName"))" /><label class="form-check-label">تحديث الاسم</label></div>
+                <input asp-for="FullName" class="form-control" placeholder="الاسم الجديد" />
+                <span asp-validation-for="FullName" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <div class="form-check"><input class="form-check-input" type="checkbox" name="FieldsToUpdate" value="SchoolClassId" checked="@(Model.FieldsToUpdate.Contains("SchoolClassId"))" /><label class="form-check-label">تحديث الفصل</label></div>
+                <select asp-for="SchoolClassId" class="form-select"><option value="">بدون فصل</option>@foreach (var item in ViewBag.Classes) { <option value="@item.Id">@item.SchoolLevel.Name - @item.Name</option> }</select>
+                <span asp-validation-for="SchoolClassId" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <div class="form-check"><input class="form-check-input" type="checkbox" name="FieldsToUpdate" value="IsActive" checked="@(Model.FieldsToUpdate.Contains("IsActive"))" /><label class="form-check-label">تحديث حالة الحساب</label></div>
+                <select asp-for="IsActive" class="form-select"><option value="true">نشط</option><option value="false">متوقف</option></select>
+            </div>
+            <div class="col-12"><h5 class="border-bottom pb-2">التواصل والعنوان</h5></div>
+            @foreach (var field in new[] { ("Mobile", "موبايل 1"), ("Mobile2", "موبايل 2"), ("Landline", "التليفون الأرضي"), ("Address", "العنوان"), ("StreetNumber", "رقم الشارع"), ("ApartmentNumber", "رقم الشقة"), ("Building", "العمارة"), ("Landmark", "علامة مميزة"), ("AddressNotes", "ملاحظات العنوان"), ("AreaCode", "كود المنطقة") })
+            {
+                <div class="col-md-4">
+                    <div class="form-check"><input class="form-check-input" type="checkbox" name="FieldsToUpdate" value="@field.Item1" checked="@(Model.FieldsToUpdate.Contains(field.Item1))" /><label class="form-check-label">تحديث @field.Item2</label></div>
+                    <input name="@field.Item1" value="@(Model.GetType().GetProperty(field.Item1)?.GetValue(Model))" class="form-control" />
+                </div>
+            }
+            <div class="col-12"><h5 class="border-bottom pb-2">الدراسة والبيانات الشخصية</h5></div>
+            @foreach (var field in new[] { ("BirthDay", "يوم الميلاد"), ("BirthMonth", "شهر الميلاد"), ("BirthYear", "سنة الميلاد"), ("StudyStage", "المرحلة الدراسية (0-9)"), ("SchoolOrUniversity", "المدرسة / الجامعة"), ("Gender", "النوع"), ("ConfessionFather", "أب الاعتراف"), ("Occupation", "المهنة") })
+            {
+                <div class="col-md-4">
+                    <div class="form-check"><input class="form-check-input" type="checkbox" name="FieldsToUpdate" value="@field.Item1" checked="@(Model.FieldsToUpdate.Contains(field.Item1))" /><label class="form-check-label">تحديث @field.Item2</label></div>
+                    <input name="@field.Item1" value="@(Model.GetType().GetProperty(field.Item1)?.GetValue(Model))" class="form-control" />
+                </div>
+            }
+            <div class="col-12"><h5 class="border-bottom pb-2">بيانات الأسرة والخدمات</h5></div>
+            @foreach (var field in new[] { ("FatherOccupation", "مهنة الأب"), ("MotherOccupation", "مهنة الأم"), ("MotherName", "اسم الأم"), ("OtherServices", "خدمات أخرى"), ("NationalId", "الرقم القومي"), ("ImageUrl", "رابط الصورة الشخصية") })
+            {
+                <div class="col-md-4">
+                    <div class="form-check"><input class="form-check-input" type="checkbox" name="FieldsToUpdate" value="@field.Item1" checked="@(Model.FieldsToUpdate.Contains(field.Item1))" /><label class="form-check-label">تحديث @field.Item2</label></div>
+                    <input name="@field.Item1" value="@(Model.GetType().GetProperty(field.Item1)?.GetValue(Model))" class="form-control" />
+                </div>
+            }
+            <div class="col-12">
+                <div class="form-check"><input class="form-check-input" type="checkbox" name="FieldsToUpdate" value="Notes" checked="@(Model.FieldsToUpdate.Contains("Notes"))" /><label class="form-check-label">تحديث الملاحظات</label></div>
+                <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-success mt-3" onclick="return confirm('سيتم تطبيق الحقول المحددة على الحسابات المحددة. هل تريد المتابعة؟')">حفظ التعديلات المحددة</button>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+    document.getElementById('selectAllAccounts')?.addEventListener('change', event => {
+        document.querySelectorAll('input[name="SelectedUserIds"]').forEach(input => input.checked = event.target.checked);
+    });
+</script>
+}

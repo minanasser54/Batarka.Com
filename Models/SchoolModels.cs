@@ -416,6 +416,56 @@ public class BulkStudentImportViewModel
     public Microsoft.AspNetCore.Http.IFormFile? CsvFile { get; set; }
 }
 
+public class BulkEditUsersViewModel
+{
+    public bool IsTeacher { get; set; }
+    public string? Search { get; set; }
+    public int? SchoolClassFilterId { get; set; }
+    public string? ActiveStatusFilter { get; set; }
+    public List<string> SelectedUserIds { get; set; } = new();
+    public List<string> FieldsToUpdate { get; set; } = new();
+    public List<BulkEditUserListItemViewModel> Users { get; set; } = new();
+
+    public string? FullName { get; set; }
+    public int? SchoolClassId { get; set; }
+    public bool IsActive { get; set; }
+    public string? Mobile { get; set; }
+    public string? Mobile2 { get; set; }
+    public string? Landline { get; set; }
+    public string? Address { get; set; }
+    public string? StreetNumber { get; set; }
+    public string? ApartmentNumber { get; set; }
+    public string? Building { get; set; }
+    public string? Landmark { get; set; }
+    public string? AddressNotes { get; set; }
+    public int? BirthDay { get; set; }
+    public int? BirthMonth { get; set; }
+    public int? BirthYear { get; set; }
+    public string? ConfessionFather { get; set; }
+    public int? StudyStage { get; set; }
+    public string? SchoolOrUniversity { get; set; }
+    public string? Gender { get; set; }
+    public string? Occupation { get; set; }
+    public string? FatherOccupation { get; set; }
+    public string? MotherOccupation { get; set; }
+    public string? MotherName { get; set; }
+    public string? OtherServices { get; set; }
+    public string? NationalId { get; set; }
+    public string? ImageUrl { get; set; }
+    public string? Notes { get; set; }
+    public string? AreaCode { get; set; }
+}
+
+public class BulkEditUserListItemViewModel
+{
+    public string Id { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
+    public string? Mobile { get; set; }
+    public string? ClassName { get; set; }
+    public bool IsActive { get; set; }
+}
+
 public class ResetPasswordViewModel
 {
     public string UserId { get; set; } = string.Empty;

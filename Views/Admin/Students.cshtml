@@ -20,6 +20,7 @@
            class="btn btn-outline-success">📥 تنزيل بيانات المخدومين (CSV)</a>
         @if (isAdmin)
         {
+            <a asp-action="BulkEditStudents" asp-route-search="@Context.Request.Query["search"]" asp-route-schoolClassFilterId="@ViewBag.SelectedClassId" asp-route-activeStatusFilter="@Context.Request.Query["activeStatus"]" class="btn btn-outline-primary">تعديل جماعي للمخدومين</a>
             <a asp-controller="SchoolStructure" asp-action="Levels" class="btn btn-outline-secondary">المراحل والفصول</a>
             <a asp-action="BulkStudents" class="btn btn-outline-secondary">إدارة جماعية</a>
             <a asp-action="CreateUser" class="btn btn-success">+ إضافة مخدوم أو خادم</a>
