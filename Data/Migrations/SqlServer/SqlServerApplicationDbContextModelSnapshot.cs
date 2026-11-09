@@ -754,6 +754,68 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                     b.ToTable("AuditLogs");
                 });
 
+            modelBuilder.Entity("MyMvcApp10.Models.GalleryEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("GalleryEvents");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.GalleryImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("FileSize")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GalleryEventId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("ImageData")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GalleryEventId");
+
+                    b.ToTable("GalleryImages");
+                });
+
             modelBuilder.Entity("MyMvcApp10.Models.GradingTransaction", b =>
                 {
                     b.Property<int>("Id")
@@ -1323,6 +1385,17 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                     b.Navigation("Actor");
                 });
 
+            modelBuilder.Entity("MyMvcApp10.Models.GalleryImage", b =>
+                {
+                    b.HasOne("MyMvcApp10.Models.GalleryEvent", "GalleryEvent")
+                        .WithMany("Images")
+                        .HasForeignKey("GalleryEventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GalleryEvent");
+                });
+
             modelBuilder.Entity("MyMvcApp10.Models.GradingTransaction", b =>
                 {
                     b.HasOne("MyMvcApp10.Models.GradingTransaction", "ReversalOfTransaction")
@@ -1505,6 +1578,11 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
             modelBuilder.Entity("MyMvcApp10.Models.AttendanceSession", b =>
                 {
                     b.Navigation("AttendanceRecords");
+                });
+
+            modelBuilder.Entity("MyMvcApp10.Models.GalleryEvent", b =>
+                {
+                    b.Navigation("Images");
                 });
 
             modelBuilder.Entity("MyMvcApp10.Models.MagicCard", b =>

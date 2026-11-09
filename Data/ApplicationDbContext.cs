@@ -21,6 +21,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ApplicationSetting> ApplicationSettings => Set<ApplicationSetting>();
     public DbSet<SchoolLevel> SchoolLevels => Set<SchoolLevel>();
     public DbSet<SchoolClass> SchoolClasses => Set<SchoolClass>();
+    public DbSet<GalleryEvent> GalleryEvents => Set<GalleryEvent>();
+    public DbSet<GalleryImage> GalleryImages => Set<GalleryImage>();
 
     // Games Market & Teams
     public DbSet<MarketCategory> MarketCategories => Set<MarketCategory>();
@@ -60,6 +62,19 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         });
 
         builder.Entity<SchoolLevel>().HasIndex(x => x.Name).IsUnique();
+        builder.Entity<GalleryEvent>(entity =>
+        {
+            entity.HasIndex(x => x.Name).IsUnique();
+        });
+        builder.Entity<GalleryImage>(entity =>
+        {
+            entity.HasIndex(x => x.GalleryEventId);
+            entity.HasOne(x => x.GalleryEvent)
+                .WithMany(x => x.Images)
+                .HasForeignKey(x => x.GalleryEventId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         builder.Entity<SchoolClass>(entity =>
         {
             entity.HasIndex(x => new { x.SchoolLevelId, x.Name }).IsUnique();
