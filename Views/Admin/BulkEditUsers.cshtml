@@ -30,7 +30,7 @@
                 <th>التليفون الأرضي</th><th>موبايل 1</th><th>موبايل 2</th>
                 <th>يوم الميلاد</th><th>شهر الميلاد</th><th>سنة الميلاد</th><th>أب الاعتراف</th><th>المرحلة الدراسية</th>
                 <th>المدرسة / الجامعة</th><th>النوع</th><th>المهنة</th><th>مهنة الأب</th><th>مهنة الأم</th><th>اسم الأم</th>
-                <th>خدمات أخرى</th><th>الرقم القومي</th><th>رابط الصورة</th><th>ملاحظات</th><th>كود المنطقة</th><th>حفظ</th>
+                <th>خدمات أخرى</th><th>الرقم القومي</th><th>رابط الصورة</th><th>رابط الموقع GPS</th><th>ملاحظات</th><th>كود المنطقة</th><th>حفظ</th>
             </tr>
         </thead>
         <tbody>
@@ -65,6 +65,7 @@
                 <td><input form="@formId" name="OtherServices" value="@user.OtherServices" class="form-control form-control-sm" style="min-width: 150px" /></td>
                 <td><input form="@formId" name="NationalId" value="@user.NationalId" class="form-control form-control-sm" style="min-width: 140px" /></td>
                 <td><input form="@formId" name="ImageUrl" value="@user.ImageUrl" class="form-control form-control-sm" style="min-width: 180px" /></td>
+                <td><input form="@formId" name="GpsLink" value="@user.GpsLink" class="form-control form-control-sm" style="min-width: 220px" /></td>
                 <td><input form="@formId" name="Notes" value="@user.Notes" class="form-control form-control-sm" style="min-width: 180px" /></td>
                 <td><input form="@formId" name="AreaCode" value="@user.AreaCode" class="form-control form-control-sm" style="min-width: 100px" /></td>
                 <td>
@@ -81,7 +82,7 @@
         }
         @if (Model.Users.Count == 0)
         {
-            <tr><td colspan="30" class="text-center text-muted py-4">لا توجد حسابات مطابقة.</td></tr>
+            <tr><td colspan="31" class="text-center text-muted py-4">لا توجد حسابات مطابقة.</td></tr>
         }
         </tbody>
     </table>

@@ -307,6 +307,10 @@ namespace MyMvcApp10.Data.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("GpsLink")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("GradingBalance")
                         .HasColumnType("INTEGER");
 

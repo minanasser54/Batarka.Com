@@ -192,6 +192,7 @@
                                         <dt class="col-5">خدمات أخرى</dt><dd class="col-7">@(item.OtherServices ?? "—")</dd>
                                         <dt class="col-5">الرقم القومي</dt><dd class="col-7">@(item.NationalId ?? "—")</dd>
                                         <dt class="col-5">رابط الصورة</dt><dd class="col-7">@(item.ImageUrl ?? "—")</dd>
+                                        <dt class="col-5">رابط GPS</dt><dd class="col-7">@if (!string.IsNullOrWhiteSpace(item.GpsLink)) { <a href="@item.GpsLink" target="_blank" rel="noreferrer">فتح الموقع</a> } else { <text>—</text> }</dd>
                                         <dt class="col-5">كود المنطقة</dt><dd class="col-7">@(item.AreaCode ?? "—")</dd>
                                     </dl>
                                 </details>

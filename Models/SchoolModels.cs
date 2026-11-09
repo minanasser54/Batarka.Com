@@ -93,6 +93,9 @@ public class ApplicationUser : IdentityUser
     [MaxLength(50)]
     public string? AreaCode { get; set; }
 
+    [MaxLength(1000)]
+    public string? GpsLink { get; set; }
+
     [MaxLength(200)]
     public string? QrCodeValue { get; set; }
 
@@ -395,6 +398,7 @@ public class RegisterViewModel
     public string? ImageUrl { get; set; }
     public string? Notes { get; set; }
     public string? AreaCode { get; set; }
+    public string? GpsLink { get; set; }
 
     public bool IsTeacher { get; set; }
     public bool IsAdmin { get; set; }
@@ -465,6 +469,7 @@ public class BulkEditUserListItemViewModel
     public string? OtherServices { get; set; }
     public string? NationalId { get; set; }
     public string? ImageUrl { get; set; }
+    public string? GpsLink { get; set; }
     public string? Notes { get; set; }
     public string? AreaCode { get; set; }
 }
@@ -562,6 +567,7 @@ public class EditUserViewModel
     public string? OtherServices { get; set; }
     public string? NationalId { get; set; }
     public string? ImageUrl { get; set; }
+    public string? GpsLink { get; set; }
     public string? AreaCode { get; set; }
 
     [Display(Name = "الفصل")]
@@ -614,6 +620,7 @@ public class AdminStudentListItemViewModel
     public string? NationalId { get; set; }
     public string? ImageUrl { get; set; }
     public string? AreaCode { get; set; }
+    public string? GpsLink { get; set; }
     public string? Notes { get; set; }
     public string? ClassName { get; set; }
     public string? Level { get; set; }

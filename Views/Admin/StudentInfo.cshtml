@@ -185,6 +185,11 @@
                                     }
                                 </div>
 
+                                @if (!string.IsNullOrWhiteSpace(s.GpsLink))
+                                {
+                                    <div class="mb-2"><strong class="small text-muted d-block">📍 موقع GPS:</strong><a href="@s.GpsLink" target="_blank" rel="noreferrer">فتح الموقع</a></div>
+                                }
+
                                 @if (!string.IsNullOrWhiteSpace(s.Notes))
                                 {
                                     <div class="mb-2 bg-light p-2 rounded">

@@ -116,6 +116,7 @@ public class AdminController : Controller
                 OtherServices = u.OtherServices,
                 NationalId = u.NationalId,
                 ImageUrl = u.ImageUrl,
+                GpsLink = u.GpsLink,
                 AreaCode = u.AreaCode,
                 Notes = u.Notes,
                 ClassName = u.SchoolClass != null ? u.SchoolClass.Name : u.ClassName,
@@ -209,6 +210,7 @@ public class AdminController : Controller
                 u.OtherServices,
                 u.NationalId,
                 u.ImageUrl,
+                u.GpsLink,
                 u.AreaCode,
                 ClassName = u.SchoolClass != null ? u.SchoolClass.Name : u.ClassName,
                 Level = u.SchoolLevel != null ? u.SchoolLevel.Name : u.Level,
@@ -222,7 +224,7 @@ public class AdminController : Controller
             .ToListAsync();
 
         var csv = new StringBuilder();
-        csv.AppendLine("الاسم,اسم المستخدم,البريد,رقم الشارع,العنوان,رقم الشقة,العمارة,علامة مميزة,ملاحظات العنوان,التليفون الأرضي,موبايل 1,موبايل 2,يوم الميلاد,شهر الميلاد,سنة الميلاد,أب الاعتراف,المرحلة الدراسية (0-9),المدرسة / الجامعة,النوع (ولد / بنت),المهنة,مهنة الأب,مهنة الأم,اسم الأم,خدمات أخرى,الرقم القومي,رابط الصورة الشخصية,ملاحظات,كود المنطقة,المرحلة,الفصل,الفريق,الرصيد,مرات الحضور,الحالة,تاريخ التسجيل");
+        csv.AppendLine("الاسم,اسم المستخدم,البريد,رقم الشارع,العنوان,رقم الشقة,العمارة,علامة مميزة,ملاحظات العنوان,التليفون الأرضي,موبايل 1,موبايل 2,يوم الميلاد,شهر الميلاد,سنة الميلاد,أب الاعتراف,المرحلة الدراسية (0-9),المدرسة / الجامعة,النوع (ولد / بنت),المهنة,مهنة الأب,مهنة الأم,اسم الأم,خدمات أخرى,الرقم القومي,رابط الصورة الشخصية,رابط الموقع GPS,ملاحظات,كود المنطقة,المرحلة,الفصل,الفريق,الرصيد,مرات الحضور,الحالة,تاريخ التسجيل");
         foreach (var item in list)
         {
             csv.AppendLine(string.Join(',', new[]
@@ -253,6 +255,7 @@ public class AdminController : Controller
                 CsvEscape(item.OtherServices),
                 CsvEscape(item.NationalId),
                 CsvEscape(item.ImageUrl),
+                CsvEscape(item.GpsLink),
                 CsvEscape(item.Notes),
                 CsvEscape(item.AreaCode),
                 CsvEscape(item.Level),
@@ -273,6 +276,13 @@ public class AdminController : Controller
     {
         var escaped = (value ?? string.Empty).Replace("\"", "\"\"");
         return $"\"{escaped}\"";
+    }
+
+    private static bool IsValidGpsLink(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            || (Uri.TryCreate(value, UriKind.Absolute, out var uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
     }
 
     private static string NormalizeCsvHeader(string? header)
@@ -355,6 +365,7 @@ public class AdminController : Controller
                 OtherServices = u.OtherServices,
                 NationalId = u.NationalId,
                 ImageUrl = u.ImageUrl,
+                GpsLink = u.GpsLink,
                 AreaCode = u.AreaCode,
                 Notes = u.Notes,
                 ClassName = u.SchoolClass != null ? u.SchoolClass.Name : u.ClassName,
@@ -437,6 +448,12 @@ public class AdminController : Controller
             return RedirectToBulkEditList(model, isTeacher);
         }
 
+        if (!IsValidGpsLink(model.GpsLink))
+        {
+            TempData["ErrorMessage"] = "رابط الموقع لازم يبدأ بـ http:// أو https://.";
+            return RedirectToBulkEditList(model, isTeacher);
+        }
+
         if (model.BirthDay is < 1 or > 31 || model.BirthMonth is < 1 or > 12
             || model.BirthYear is < 1800 or > 2100 || model.StudyStage is < 0 or > 9)
         {
@@ -485,6 +502,7 @@ public class AdminController : Controller
         user.OtherServices = model.OtherServices?.Trim();
         user.NationalId = model.NationalId?.Trim();
         user.ImageUrl = model.ImageUrl?.Trim();
+        user.GpsLink = model.GpsLink?.Trim();
         user.Notes = model.Notes?.Trim();
         user.AreaCode = model.AreaCode?.Trim();
         user.UpdatedAt = DateTime.UtcNow;
@@ -566,6 +584,7 @@ public class AdminController : Controller
                 OtherServices = user.OtherServices,
                 NationalId = user.NationalId,
                 ImageUrl = user.ImageUrl,
+                GpsLink = user.GpsLink,
                 Notes = user.Notes,
                 AreaCode = user.AreaCode
             })
@@ -644,6 +663,9 @@ public class AdminController : Controller
             return Forbid();
         }
 
+        if (!IsValidGpsLink(model.GpsLink))
+            ModelState.AddModelError(nameof(model.GpsLink), "رابط الموقع لازم يبدأ بـ http:// أو https://.");
+
         if (!ModelState.IsValid)
         {
             await LoadSchoolOptionsAsync();
@@ -696,6 +718,7 @@ public class AdminController : Controller
             OtherServices = model.OtherServices?.Trim(),
             NationalId = model.NationalId?.Trim(),
             ImageUrl = model.ImageUrl?.Trim(),
+            GpsLink = model.GpsLink?.Trim(),
             Notes = model.Notes?.Trim(),
             AreaCode = model.AreaCode?.Trim(),
             SchoolClassId = schoolClass?.Id,
@@ -787,6 +810,7 @@ public class AdminController : Controller
             OtherServices = user.OtherServices,
             NationalId = user.NationalId,
             ImageUrl = user.ImageUrl,
+            GpsLink = user.GpsLink,
             AreaCode = user.AreaCode,
             Notes = user.Notes,
             SchoolClassId = user.SchoolClassId,
@@ -828,6 +852,9 @@ public class AdminController : Controller
             ModelState.AddModelError(nameof(model.SchoolClassId), "الفصل المختار مش موجود.");
         }
 
+        if (!IsValidGpsLink(model.GpsLink))
+            ModelState.AddModelError(nameof(model.GpsLink), "رابط الموقع لازم يبدأ بـ http:// أو https://.");
+
         if (!ModelState.IsValid)
         {
             await LoadSchoolOptionsAsync();
@@ -862,6 +889,7 @@ public class AdminController : Controller
         user.OtherServices = model.OtherServices?.Trim();
         user.NationalId = model.NationalId?.Trim();
         user.ImageUrl = model.ImageUrl?.Trim();
+        user.GpsLink = model.GpsLink?.Trim();
         user.AreaCode = model.AreaCode?.Trim();
         user.Notes = model.Notes?.Trim();
         user.SchoolClassId = schoolClass?.Id;
@@ -1228,7 +1256,7 @@ public class AdminController : Controller
             "studystage", "المدرسة / الجامعة", "schooloruniversity", "النوع", "gender", "المهنة", "occupation",
             "مهنة الأب", "fatheroccupation", "مهنة الأم", "motheroccupation", "اسم الأم", "mothername", "خدمات أخرى",
             "otherservices", "الرقم القومي", "nationalid", "رابط الصورة الشخصية", "imageurl", "ملاحظات", "notes", "كود المنطقة", "areacode",
-            "المرحلة الدراسية (0-9)", "النوع (ولد / بنت)"
+            "المرحلة الدراسية (0-9)", "النوع (ولد / بنت)", "رابط الموقع الجغرافي", "رابط الموقع gps", "رابط gps", "gpslink", "gps link"
         };
         if (!knownHeaders.Any(name => headerMap.ContainsKey(NormalizeCsvHeader(name))))
         {
@@ -1277,6 +1305,13 @@ public class AdminController : Controller
                 continue;
             }
 
+            var gpsLink = CsvValue(headerMap, fields, "رابط الموقع GPS", "رابط الموقع الجغرافي", "رابط GPS", "gpslink", "gps link");
+            if (!IsValidGpsLink(gpsLink))
+            {
+                errors.Add($"السطر {rowNumber}: رابط الموقع لازم يبدأ بـ http:// أو https://.");
+                continue;
+            }
+
             var isTeacherImport = model.ImportTeachers;
             var user = new ApplicationUser
             {
@@ -1306,6 +1341,7 @@ public class AdminController : Controller
                 OtherServices = CsvValue(headerMap, fields, "خدمات أخرى", "otherservices", "other services"),
                 NationalId = CsvValue(headerMap, fields, "الرقم القومي", "nationalid", "national id"),
                 ImageUrl = CsvValue(headerMap, fields, "رابط الصورة الشخصية", "imageurl", "profile image"),
+                GpsLink = gpsLink,
                 Notes = CsvValue(headerMap, fields, "ملاحظات", "notes"),
                 AreaCode = CsvValue(headerMap, fields, "كود المنطقة", "areacode", "area code"),
                 SchoolClassId = schoolClass?.Id,

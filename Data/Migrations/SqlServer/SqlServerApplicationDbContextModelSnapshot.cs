@@ -321,6 +321,10 @@ namespace MyMvcApp10.Data.Migrations.SqlServer
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<string>("GpsLink")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<int>("GradingBalance")
                         .HasColumnType("int");
 
